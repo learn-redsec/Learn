@@ -1,0 +1,185 @@
+{
+  "$schema": "https://mintlify.com/docs.json",
+  "theme": "mint",
+  "name": "RedSec Learn",
+  "seo": {
+    "indexing": "navigable"
+  },
+  "contextual": {
+    "options": [
+      "copy",
+      "view",
+      "chatgpt",
+      "claude",
+      "perplexity",
+      "cursor",
+      "vscode"
+    ]
+  },
+  "icons": {
+    "library": "lucide"
+  },
+  "colors": {
+    "primary": "#dc2626",
+    "light": "#ef4444",
+    "dark": "#ef4444"
+  },
+  "background": {
+    "color": {
+      "dark": "#0b0f14"
+    }
+  },
+  "favicon": "favicon.svg",
+  "logo": {
+    "light": "/logo/light.svg",
+    "dark": "/logo/dark.svg",
+    "href": "/"
+  },
+  "navbar": {
+    "primary": {
+      "type": "button",
+      "label": "Start learning",
+      "href": "/learn/foundations"
+    },
+    "links": [
+      {
+        "label": "Skills",
+        "href": "/skills"
+      },
+      {
+        "label": "Binary Exploitation",
+        "href": "/skills/binary%20exploitation/setup"
+      },
+      {
+        "label": "Advanced Malware Analysis",
+        "href": "/skills/advanced%20malware%20analysis/setup"
+      },
+      {
+        "label": "Labs",
+        "href": "/learn/labs"
+      },
+      {
+        "label": "GitHub",
+        "href": "https://github.com/learn-redsec"
+      }
+    ]
+  },
+  "footer": {
+    "socials": {
+      "github": "https://github.com/learn-redsec"
+    },
+    "links": [
+      {
+        "header": "Learn",
+        "items": [
+          {
+            "label": "Start",
+            "href": "/"
+          },
+          {
+            "label": "Foundations",
+            "href": "/learn/foundations"
+          },
+          {
+            "label": "Labs",
+            "href": "/learn/labs"
+          }
+        ]
+      },
+      {
+        "header": "Red Teaming",
+        "items": [
+          {
+            "label": "Rules of Engagement",
+            "href": "/learn/rules-of-engagement"
+          },
+          {
+            "label": "Reconnaissance",
+            "href": "/learn/reconnaissance"
+          },
+          {
+            "label": "Web App Basics",
+            "href": "/learn/web-app-basics"
+          }
+        ]
+      }
+    ]
+  },
+  "navigation": {
+    "dropdowns": [
+      {
+        "dropdown": "Start",
+        "icon": "home",
+        "href": "/"
+      },
+      {
+        "dropdown": "Learn",
+        "icon": "book-open",
+        "pages": [
+          {
+            "group": "Red Teaming",
+            "pages": [
+              "learn/foundations",
+              "learn/rules-of-engagement",
+              "learn/reconnaissance",
+              "learn/web-app-basics",
+              "learn/labs"
+            ]
+          }
+        ]
+      },
+      {
+        "dropdown": "Skills",
+        "icon": "graduation-cap",
+        "pages": [
+          "skills/index",
+          {
+            "group": "Binary Exploitation",
+            "pages": [
+              "skills/binary exploitation/setup",
+              "skills/binary exploitation/tut01-warmup1",
+              "skills/binary exploitation/tut02-warmup2",
+              "skills/binary exploitation/tut03-01-exploit",
+              "skills/binary exploitation/tut03-02-pwntools",
+              "skills/binary exploitation/tut04-ssp",
+              "skills/binary exploitation/tut05-fmtstr",
+              "skills/binary exploitation/tut06-01-rop",
+              "skills/binary exploitation/tut06-02-advrop",
+              "skills/binary exploitation/tut07-01-socket",
+              "skills/binary exploitation/tut07-02-remote",
+              "skills/binary exploitation/tut08-logic-error",
+              "skills/binary exploitation/tut09-01-heap",
+              "skills/binary exploitation/tut09-02-advheap",
+              "skills/binary exploitation/tut10-01-fuzzing",
+              "skills/binary exploitation/tut10-02-symexec",
+              "skills/binary exploitation/tut10-03-hybrid-fuzzing"
+            ]
+          },
+          {
+            "group": "Advanced Malware Analysis",
+            "pages": [
+              "skills/advanced malware analysis/setup"
+            ]
+          },
+          {
+            "group": "Quick Links",
+            "pages": [
+              "learn/foundations",
+              "learn/labs"
+            ]
+          }
+        ]
+      },
+      {
+        "dropdown": "Labs",
+        "icon": "flask-conical",
+        "href": "/learn/labs"
+      },
+      {
+        "dropdown": "GitHub",
+        "icon": "github",
+        "href": "https://github.com/learn-redsec"
+      }
+    ]
+  }
+}

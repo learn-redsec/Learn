@@ -1,0 +1,20 @@
+{
+  "name": "redsec-learn",
+  "version": "1.0.0",
+  "description": "Small RedSec Learn starter built with Mintlify.",
+  "scripts": {
+    "build": "mint export --output export.zip",
+    "dev": "mint dev --port 3333",
+    "test-links": "mint broken-links"
+  },
+  "license": "ISC",
+  "packageManager": "pnpm@10.14.0",
+  "pnpm": {
+    "overrides": {
+      "react": "19.2.4"
+    }
+  },
+  "dependencies": {
+    "mint": "^4.2.527"
+  }
+}

@@ -292,3 +292,7 @@ footer#footer a {
 .nav-tabs-item > div.absolute.bottom-0 {
   height: 2px !important;
 }
+
+#search-bar-entry {
+  display: none !important;
+}

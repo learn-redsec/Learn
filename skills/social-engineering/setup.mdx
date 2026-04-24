@@ -1,0 +1,57 @@
+---
+title: "Intro: Social Engineering & OSINT"
+description: Hands-on course covering open source intelligence gathering, target profiling, phishing, and pretexting techniques for authorized red team engagements.
+---
+
+Technical vulnerabilities are not always the entry point. In many real-world red team engagements, the most effective initial access vector is a human one. Social engineering exploits trust, urgency, and habit rather than software bugs. This course teaches the concepts, tools, and ethics of OSINT and social engineering for authorized engagements.
+
+## What You Will Learn
+
+- Gather information about targets from publicly available sources (OSINT).
+- Build target profiles that inform attack scenarios.
+- Understand how phishing campaigns are constructed and detected.
+- Apply pretexting frameworks in authorized exercises.
+- Evaluate and document social engineering findings.
+
+## Ethics and Authorization
+
+Social engineering has a higher potential for psychological harm than technical exploitation. Before any exercise:
+
+- Get **explicit written authorization** that covers the social engineering techniques you plan to use.
+- Know who the target population is and who is **explicitly excluded** (e.g., employees on medical leave, contractors).
+- Agree on a **safe word** or reporting mechanism so that employees who feel genuinely uncomfortable can stop the exercise.
+- Debrief after the exercise and treat everyone with respect—the goal is organizational improvement, not embarrassment.
+
+All exercises in this course should be practiced on yourself, your own accounts, and authorized targets only.
+
+## Tools Used in This Course
+
+| Tool | Purpose |
+|------|---------|
+| `theHarvester` | Email, domain, and name enumeration |
+| `Maltego` | Relationship mapping and OSINT visualization |
+| `recon-ng` | Modular web reconnaissance framework |
+| `whois` / `dig` | DNS and domain ownership lookup |
+| `Shodan` | Internet-connected device search |
+| `OSINT Framework` | Curated OSINT tool directory |
+| `GoPhish` | Phishing simulation platform |
+
+## Setup
+
+```sh
+# Install OSINT tools
+sudo apt install -y theharvester recon-ng whois dnsutils
+
+# Install GoPhish
+wget https://github.com/gophish/gophish/releases/download/v0.12.1/gophish-v0.12.1-linux-64bit.zip
+unzip gophish-v0.12.1-linux-64bit.zip
+chmod +x gophish
+./gophish
+```
+
+Create accounts for:
+- [Shodan](https://shodan.io) (free tier available)
+- [Hunter.io](https://hunter.io) (email finder)
+- [LinkedIn](https://linkedin.com) (employee enumeration)
+
+You are ready. Proceed to Tutorial 01.

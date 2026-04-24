@@ -1,15 +1,30 @@
 ---
 title: Skills
-description: Course tracks for practical security learning.
+description: Course tracks for practical red team security learning.
 ---
 
-Choose a course track to start working through the tutorials.
+Choose a course track to start working through the tutorials. Each track is self-contained and builds from setup through hands-on exercises.
 
-<Columns cols={2}>
+<CardGroup cols={2}>
+  <Card title="Network Penetration Testing" href="./network-pentest/setup" icon="network">
+    Host discovery, port scanning, service enumeration, exploitation, and post-exploitation of network services.
+  </Card>
+  <Card title="Web Application Hacking" href="./web-hacking/setup" icon="globe">
+    Web recon, SQL injection, XSS, authentication bypass, SSRF, and XXE in authorized lab environments.
+  </Card>
+  <Card title="Active Directory Attacks" href="./active-directory/setup" icon="building">
+    AD enumeration, password attacks, lateral movement, privilege escalation, and domain dominance.
+  </Card>
+  <Card title="Password Cracking" href="./password-cracking/setup" icon="key">
+    Hash identification, dictionary attacks, rule-based cracking, and mask attacks with Hashcat and John.
+  </Card>
+  <Card title="Social Engineering & OSINT" href="./social-engineering/setup" icon="users">
+    OSINT fundamentals, target profiling, phishing simulations, and pretexting for authorized engagements.
+  </Card>
   <Card title="Binary Exploitation" href="./binary-exploitation/setup" icon="binary">
-    Learn debugging, shellcode, ROP, heap behavior, fuzzing, and symbolic execution through hands-on labs.
+    Debugging, shellcode, ROP chains, heap exploitation, fuzzing, and symbolic execution.
   </Card>
   <Card title="Advanced Malware Analysis" href="./advanced-malware-analysis/setup" icon="bug">
     Reverse engineer and reason about malware behavior in a controlled learning environment.
   </Card>
-</Columns>
+</CardGroup>

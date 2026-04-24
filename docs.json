@@ -47,15 +47,7 @@
         "href": "/skills"
       },
       {
-        "label": "Binary Exploitation",
-        "href": "/skills/binary-exploitation/setup"
-      },
-      {
-        "label": "Advanced Malware Analysis",
-        "href": "/skills/advanced-malware-analysis/setup"
-      },
-      {
-        "label": "Labs",
+        "label": "Resources",
         "href": "/learn/labs"
       },
       {
@@ -81,7 +73,7 @@
             "href": "/learn/foundations"
           },
           {
-            "label": "Labs",
+            "label": "Resources",
             "href": "/learn/labs"
           }
         ]
@@ -100,6 +92,31 @@
           {
             "label": "Web App Basics",
             "href": "/learn/web-app-basics"
+          }
+        ]
+      },
+      {
+        "header": "Courses",
+        "items": [
+          {
+            "label": "Network Penetration Testing",
+            "href": "/skills/network-pentest/setup"
+          },
+          {
+            "label": "Web Application Hacking",
+            "href": "/skills/web-hacking/setup"
+          },
+          {
+            "label": "Active Directory Attacks",
+            "href": "/skills/active-directory/setup"
+          },
+          {
+            "label": "Password Cracking",
+            "href": "/skills/password-cracking/setup"
+          },
+          {
+            "label": "Social Engineering & OSINT",
+            "href": "/skills/social-engineering/setup"
           }
         ]
       }
@@ -122,8 +139,7 @@
               "learn/foundations",
               "learn/rules-of-engagement",
               "learn/reconnaissance",
-              "learn/web-app-basics",
-              "learn/labs"
+              "learn/web-app-basics"
             ]
           }
         ]
@@ -133,6 +149,59 @@
         "icon": "graduation-cap",
         "pages": [
           "skills",
+          {
+            "group": "Network Penetration Testing",
+            "pages": [
+              "skills/network-pentest/setup",
+              "skills/network-pentest/tut01-host-discovery",
+              "skills/network-pentest/tut02-port-scanning",
+              "skills/network-pentest/tut03-service-enumeration",
+              "skills/network-pentest/tut04-exploitation",
+              "skills/network-pentest/tut05-post-exploitation"
+            ]
+          },
+          {
+            "group": "Web Application Hacking",
+            "pages": [
+              "skills/web-hacking/setup",
+              "skills/web-hacking/tut01-recon-and-mapping",
+              "skills/web-hacking/tut02-sql-injection",
+              "skills/web-hacking/tut03-xss",
+              "skills/web-hacking/tut04-auth-bypass",
+              "skills/web-hacking/tut05-ssrf-xxe"
+            ]
+          },
+          {
+            "group": "Active Directory Attacks",
+            "pages": [
+              "skills/active-directory/setup",
+              "skills/active-directory/tut01-ad-enumeration",
+              "skills/active-directory/tut02-password-attacks",
+              "skills/active-directory/tut03-lateral-movement",
+              "skills/active-directory/tut04-privilege-escalation",
+              "skills/active-directory/tut05-domain-dominance"
+            ]
+          },
+          {
+            "group": "Password Cracking",
+            "pages": [
+              "skills/password-cracking/setup",
+              "skills/password-cracking/tut01-hash-types",
+              "skills/password-cracking/tut02-dictionary-attacks",
+              "skills/password-cracking/tut03-rule-based-cracking",
+              "skills/password-cracking/tut04-mask-attacks"
+            ]
+          },
+          {
+            "group": "Social Engineering & OSINT",
+            "pages": [
+              "skills/social-engineering/setup",
+              "skills/social-engineering/tut01-osint-fundamentals",
+              "skills/social-engineering/tut02-target-profiling",
+              "skills/social-engineering/tut03-phishing-basics",
+              "skills/social-engineering/tut04-pretexting"
+            ]
+          },
           {
             "group": "Binary Exploitation",
             "pages": [
@@ -160,19 +229,12 @@
             "pages": [
               "skills/advanced-malware-analysis/setup"
             ]
-          },
-          {
-            "group": "Quick Links",
-            "pages": [
-              "learn/foundations",
-              "learn/labs"
-            ]
           }
         ]
       },
       {
-        "dropdown": "Labs",
-        "icon": "flask-conical",
+        "dropdown": "Resources",
+        "icon": "book-marked",
         "href": "/learn/labs"
       },
       {

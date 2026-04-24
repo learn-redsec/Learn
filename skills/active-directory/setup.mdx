@@ -1,0 +1,61 @@
+---
+title: "Intro: Active Directory Attacks"
+description: Hands-on course covering Active Directory enumeration, credential attacks, lateral movement, privilege escalation, and domain dominance in authorized lab environments.
+---
+
+Active Directory (AD) is the identity and access management backbone of most enterprise Windows environments. Compromising AD often means compromising the entire organization. This course teaches how red teamers approach Windows domain environments—from initial enumeration with no privileges to achieving Domain Admin.
+
+## What You Will Learn
+
+- Enumerate AD objects, users, groups, and trust relationships.
+- Perform credential attacks including password spraying and Kerberoasting.
+- Move laterally using Pass-the-Hash, Pass-the-Ticket, and WinRM.
+- Escalate privileges through ACL abuse, delegation, and misconfigurations.
+- Achieve domain dominance using DCSync and Golden Ticket attacks.
+
+## Lab Environment
+
+Build a local Windows AD lab:
+
+1. Download Windows Server evaluation ISOs from [Microsoft Evaluation Center](https://www.microsoft.com/en-us/evalcenter/).
+2. Create a VM with Windows Server 2019/2022, promote it to a Domain Controller.
+3. Create 2–3 Windows 10/11 VMs and join them to the domain.
+4. Add users with varied privilege levels and introduce intentional misconfigurations.
+
+Alternatively, use cloud-based labs:
+- [Hack The Box Pro Labs (Offshore, RastaLabs)](https://www.hackthebox.com/hacker/pro-labs)
+- [TryHackMe Active Directory rooms](https://tryhackme.com)
+- [GOAD (Game of Active Directory)](https://github.com/Orange-Cyberdefense/GOAD) — automated vulnerable AD lab setup
+
+## Tools Used in This Course
+
+| Tool | Purpose |
+|------|---------|
+| `BloodHound` | AD attack path visualization |
+| `SharpHound` / `BloodHound.py` | AD data collection for BloodHound |
+| `Impacket` | Python tools for AD attacks |
+| `CrackMapExec` | SMB/WinRM interaction and lateral movement |
+| `Rubeus` | Kerberos ticket attacks (Windows) |
+| `Mimikatz` | Credential extraction (Windows) |
+| `Evil-WinRM` | Remote PowerShell over WinRM |
+| `PowerView` | PowerShell AD enumeration module |
+
+## Setup
+
+```sh
+# Install Impacket (Python)
+pip3 install impacket
+
+# Install CrackMapExec
+sudo apt install crackmapexec
+
+# Install Evil-WinRM
+gem install evil-winrm
+
+# Install BloodHound
+sudo apt install bloodhound
+sudo neo4j start
+bloodhound
+```
+
+You are ready. Proceed to Tutorial 01.

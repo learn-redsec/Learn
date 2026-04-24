@@ -1,0 +1,121 @@
+---
+title: "Tut01: Hash Types & Identification"
+---
+
+Before you can crack a hash, you need to know what algorithm produced it. Different algorithms require different hashcat modes. Using the wrong mode wastes time and produces no results.
+
+## What Is a Hash?
+
+A hash is a fixed-length output produced by a one-way function. The same input always produces the same output, but you cannot reverse the output to get the input—you can only compare hashes.
+
+Password cracking works by hashing guesses and comparing them to the target hash. When they match, you have found the password.
+
+## Common Hash Formats
+
+| Hash | Algorithm | Example |
+|------|-----------|---------|
+| 32 hex chars | MD5 | `5f4dcc3b5aa765d61d8327deb882cf99` |
+| 40 hex chars | SHA-1 | `5baa61e4c9b93f3f0682250b6cf8331b7ee68fd8` |
+| 64 hex chars | SHA-256 | `5e884898da28047151d0e56f8dc6292773603d0d6aabbdd62...` |
+| `$1$...` | MD5crypt | `$1$saltsalt$...` |
+| `$2y$...` / `$2a$...` | bcrypt | `$2y$10$...` |
+| `$5$...` | SHA-256crypt | Unix shadow |
+| `$6$...` | SHA-512crypt | Unix shadow |
+| `$apr1$...` | Apache MD5 | Apache `.htpasswd` |
+| `aad3...` (32 hex, always same LM half) | NTLM | Windows SAM / secretsdump |
+| `$krb5tgs$23$...` | Kerberos TGS-REP | Kerberoasting output |
+| `$krb5asrep$23$...` | Kerberos AS-REP | AS-REP Roasting output |
+| `$DCC2$...` | Domain Cached Credentials v2 | Windows registry |
+| `$NTLMv2$...` or NTLMv2 format | NTLMv2-SSP | Responder capture |
+
+## Identifying Hashes
+
+### hash-identifier
+
+```sh
+hash-identifier
+# Paste the hash when prompted
+```
+
+### haiti
+
+```sh
+haiti '5f4dcc3b5aa765d61d8327deb882cf99'
+# MD5 [HC: 0] [JtR: raw-md5]
+```
+
+The output gives you the hashcat mode (`HC:`) and John format (`JtR:`) directly.
+
+### hashcat --identify
+
+```sh
+hashcat --identify hash.txt
+```
+
+## Hashcat Mode Numbers
+
+The mode number is the critical parameter for hashcat (`-m`):
+
+| Mode | Algorithm |
+|------|-----------|
+| 0 | MD5 |
+| 100 | SHA-1 |
+| 1400 | SHA-256 |
+| 1800 | sha512crypt `$6$` |
+| 3200 | bcrypt `$2*$` |
+| 1000 | NTLM |
+| 5600 | NTLMv2-SSP |
+| 13100 | Kerberos TGS-REP (Kerberoasting) |
+| 18200 | Kerberos AS-REP (AS-REP Roasting) |
+| 2100 | Domain Cached Credentials v2 (DCC2) |
+| 500 | MD5crypt `$1$` |
+
+## Identifying Windows Hashes
+
+When you dump hashes from Windows with Mimikatz or secretsdump, output looks like:
+
+```
+administrator:500:aad3b435b51404eeaad3b435b51404ee:64f12cddaa88057e06a81b54e73b949b:::
+```
+
+Format: `username:RID:LM_hash:NT_hash:::`
+
+- **LM hash** (`aad3b435b51404eeaad3b435b51404ee`) — when this exact value appears, LM hashing is disabled (or the password is empty). This half is useless.
+- **NT hash** (`64f12cddaa88057e06a81b54e73b949b`) — this is the real hash to crack. Mode `1000` in hashcat.
+
+Extract just the NT hash for a hash file:
+
+```sh
+cut -d: -f4 secretsdump_output.txt > nt_hashes.txt
+```
+
+## Identifying Linux Hashes
+
+Linux stores hashes in `/etc/shadow`:
+
+```
+alice:$6$rounds=5000$saltsalt$hash...:18900:0:99999:7:::
+```
+
+The prefix indicates the algorithm:
+- `$1$` — MD5crypt (mode 500)
+- `$5$` — SHA-256crypt (mode 7400)
+- `$6$` — SHA-512crypt (mode 1800)
+- `$y$` — yescrypt (modern systems)
+- `$2y$` / `$2b$` — bcrypt (mode 3200)
+
+## Task
+
+> **[Task]** Identify the algorithm for each of these hashes using `haiti` or hashcat `--identify`. Note the hashcat mode for each:
+> 1. `5f4dcc3b5aa765d61d8327deb882cf99`
+> 2. `64f12cddaa88057e06a81b54e73b949b`
+> 3. `$6$rounds=5000$salt$hash...`
+> 4. `$krb5tgs$23$*user$...*$hash`
+>
+> Then extract the NT hashes from a secretsdump output file and save them to `nt_hashes.txt`.
+
+## Reference
+
+- [Hashcat Example Hashes](https://hashcat.net/wiki/doku.php?id=example_hashes)
+- [haiti GitHub](https://github.com/noraj/haiti)
+- [Name That Hash](https://nth.skerritt.blog)

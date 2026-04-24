@@ -1,0 +1,156 @@
+---
+title: "Tut02: Dictionary Attacks"
+---
+
+A dictionary attack hashes every word in a wordlist and compares it to the target hash. It is the fastest and most productive cracking method because most users choose real words, names, or common passwords.
+
+## The Core Hashcat Command
+
+```sh
+hashcat -a 0 -m <mode> <hashfile> <wordlist>
+```
+
+- `-a 0` — attack mode: dictionary (straight)
+- `-m <mode>` — hash type (from Tutorial 01)
+- `<hashfile>` — file containing one hash per line
+- `<wordlist>` — the wordlist to use
+
+## Your First Crack: MD5
+
+Create a test hash:
+
+```sh
+echo -n 'password' | md5sum
+# 5f4dcc3b5aa765d61d8327deb882cf99  -
+
+echo '5f4dcc3b5aa765d61d8327deb882cf99' > test.hash
+
+hashcat -a 0 -m 0 test.hash /usr/share/wordlists/rockyou.txt
+```
+
+Hashcat shows the cracked result:
+
+```
+5f4dcc3b5aa765d61d8327deb882cf99:password
+```
+
+## Cracking NT Hashes (Windows)
+
+```sh
+# nt_hashes.txt contains one NT hash per line
+hashcat -a 0 -m 1000 nt_hashes.txt /usr/share/wordlists/rockyou.txt
+
+# Show results
+hashcat -a 0 -m 1000 nt_hashes.txt /usr/share/wordlists/rockyou.txt --show
+```
+
+## Cracking Kerberoast Hashes
+
+```sh
+hashcat -a 0 -m 13100 kerberoast.hash /usr/share/wordlists/rockyou.txt
+```
+
+## Useful Wordlists
+
+| Wordlist | Location | Size | Use |
+|---------|----------|------|-----|
+| rockyou.txt | `/usr/share/wordlists/rockyou.txt` | 14M | General purpose |
+| fasttrack.txt | `/usr/share/wordlists/fasttrack.txt` | Small | Quick common passwords |
+| SecLists/Passwords | [GitHub](https://github.com/danielmiessler/SecLists/tree/master/Passwords) | Various | Targeted collections |
+| CrackStation wordlist | [Download](https://crackstation.net/crackstation-wordlist-password-cracking-dictionary.htm) | 15GB | Comprehensive |
+
+Install SecLists:
+
+```sh
+sudo apt install seclists
+# Located at /usr/share/seclists/
+```
+
+## John the Ripper
+
+John is useful for its built-in format converters and as a CPU alternative.
+
+```sh
+# Crack with rockyou
+john --wordlist=/usr/share/wordlists/rockyou.txt hashes.txt
+
+# Show cracked passwords
+john --show hashes.txt
+
+# Specify format explicitly
+john --format=NT --wordlist=/usr/share/wordlists/rockyou.txt nt_hashes.txt
+```
+
+John auto-detects many formats but can be wrong—always specify `--format` if you know the hash type.
+
+## Building a Target-Specific Wordlist
+
+General wordlists miss company-specific passwords. Build a targeted wordlist using:
+
+### CeWL (web scraping)
+
+```sh
+# Scrape words from a target website
+cewl https://corp.example.com -m 6 -d 3 -w wordlist.txt
+```
+
+`-m 6` — minimum word length 6
+`-d 3` — crawl depth 3
+
+### Manually Added Terms
+
+Add company name, products, city, year, and common variants to your wordlist:
+
+```text
+CorpName2024
+CorpName2024!
+CorpName@2024
+Winter2024
+Summer2024
+```
+
+Combine:
+
+```sh
+cat /usr/share/wordlists/rockyou.txt company_words.txt > combined.txt
+hashcat -a 0 -m 1000 nt_hashes.txt combined.txt
+```
+
+## Optimizing Cracking Speed
+
+```sh
+# Use GPU optimizations
+hashcat -a 0 -m 1000 nt_hashes.txt rockyou.txt -O -w 3
+
+# -O: optimized kernels (slightly limits password length to ~31 chars)
+# -w 3: workload profile (1=minimal, 4=nightmare/max)
+```
+
+Check your hardware speed:
+
+```sh
+hashcat -b -m 1000
+# Shows hashes/second your hardware can compute
+```
+
+## Tracking Results
+
+Hashcat saves cracked hashes in a potfile (`~/.hashcat/hashcat.potfile`). You never have to recrack a hash you have already solved.
+
+```sh
+# View all previously cracked hashes
+hashcat --show -m 1000 nt_hashes.txt
+
+# Remove cracked hashes from your list (to focus on uncracked ones)
+hashcat --left -m 1000 nt_hashes.txt
+```
+
+## Task
+
+> **[Task]** Create MD5 hashes of five passwords you choose (use `echo -n 'password' | md5sum`). Save them to a file. Run a dictionary attack with rockyou.txt and confirm all five are cracked. Then take the NT hashes from your AD lab (or use the provided sample) and crack as many as possible with rockyou.txt. Record how many were cracked and what percentage of the total they represent.
+
+## Reference
+
+- [Hashcat Documentation](https://hashcat.net/wiki/)
+- [SecLists Password Wordlists](https://github.com/danielmiessler/SecLists/tree/master/Passwords)
+- [CrackStation Wordlist](https://crackstation.net/crackstation-wordlist-password-cracking-dictionary.htm)

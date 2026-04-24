@@ -132,7 +132,7 @@
         "dropdown": "Skills",
         "icon": "graduation-cap",
         "pages": [
-          "skills/index",
+          "skills",
           {
             "group": "Binary Exploitation",
             "pages": [

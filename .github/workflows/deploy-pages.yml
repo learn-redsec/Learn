@@ -49,6 +49,7 @@ jobs:
           rm -f dist/mint-dev.*.log dist/redsec-local-preview.js dist/serve.js
           rm -f "dist/Start Docs.bat" "dist/Start Docs.command"
           touch dist/.nojekyll
+          echo "learn.redsec.cc" > dist/CNAME
 
       - name: Upload Pages artifact
         uses: actions/upload-pages-artifact@v3

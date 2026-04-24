@@ -1,0 +1,132 @@
+---
+title: "Tut04: Pretexting"
+---
+
+Pretexting is the act of creating a fabricated scenario to manipulate someone into providing information, access, or performing an action. Unlike phishing, which is usually delivered passively (the target opens an email), pretexting often involves active interaction—a phone call, an in-person visit, or a sustained back-and-forth conversation.
+
+**All pretexting exercises require explicit written authorization. Never deceive someone outside the defined scope.**
+
+## The Anatomy of a Pretext
+
+A pretext has five components:
+
+1. **Character** — who are you pretending to be?
+2. **Reason** — why would this character legitimately need what you are asking for?
+3. **Supporting details** — internal terminology, names, systems, that make you credible.
+4. **Hook** — the opening that gets the target engaged.
+5. **Ask** — the specific action or information you want.
+
+A weak pretext fails because any of these components is missing or unconvincing.
+
+## Building Credibility
+
+Credibility comes from details. Use your OSINT and target profiling to load the pretext with real information:
+
+- Use the target's name and department.
+- Reference real internal systems (ServiceNow, Jira, Active Directory).
+- Use correct internal terminology (ticket numbers, project codenames from job postings).
+- Reference a real person the target would know (a manager, IT staff by name).
+- Know the organization's processes well enough to describe them.
+
+## Common Pretext Scenarios in Red Team Engagements
+
+### IT Help Desk Impersonation
+
+**Character**: IT support calling about an account issue.
+
+**Script outline**:
+> "Hi, this is Mike from IT support. I'm seeing that your account triggered a failed login alert from an unexpected location this morning. I need to verify your current credentials and run a quick lockout check on my end. Can you confirm the username you use to log in?"
+
+**Why it works**: Authority (IT), urgency (security alert), familiar scenario.
+
+**What to note**: A well-trained employee will offer to call IT back on the official number. That is the correct response—note it as a positive control.
+
+### New Employee / Onboarding
+
+**Character**: New employee who cannot access a system needed for work.
+
+**Script outline**:
+> "Hi, I just started in the marketing department this week and I'm supposed to get access to the shared drive, but my manager Sarah has been in meetings all day. She said to call IT if I ran into trouble. My name is Alex Reeves. Can you help me get access to the marketing folder?"
+
+**Why it works**: New employees are expected to need help. Helpers want to assist. Managers being unavailable is normal. The ask is small and reasonable.
+
+### Vendor Impersonation
+
+**Character**: Support engineer from a known vendor (Microsoft, Cisco, cloud provider).
+
+**Script outline**:
+> "Hi, this is calling from Microsoft Azure support. We've detected unusual activity on one of your tenant's storage accounts and we're reaching out proactively. I need to verify your tenant administrator to put a temporary hold on the activity. Can you confirm the admin account email?"
+
+**Why it works**: Trusted brand, proactive security framing, urgency.
+
+## Vishing (Voice Phishing) Techniques
+
+Vishing exercises are conducted by phone or voice chat.
+
+### Preparation
+
+- Write a script with variations for common responses.
+- Practice out loud before calling.
+- Have your OSINT notes open and visible.
+- Use a VOIP number that matches the claimed caller ID (only in authorized exercises).
+
+### Handling Resistance
+
+| Target response | Attacker response |
+|----------------|------------------|
+| "I need to verify who you are." | "Of course. You can verify my ticket number is [number]. Your manager [name] opened it this morning." |
+| "I'll call IT back on the main number." | "That's fine. My extension is [ext]. If you'd prefer, you can also chat me on Teams." |
+| "I'm not supposed to share that information." | "I completely understand. I can escalate the ticket and have your manager authorize it instead. It will just take a bit longer." |
+| "How did you get my number?" | "It's in the company directory—you're listed as the contact for [department]." |
+
+The goal is not to fight resistance—it is to work around it naturally without raising suspicion.
+
+## Physical Pretexting
+
+Physical pretexting involves entering a facility or restricted area under false pretenses. Examples:
+- Delivery person with a package for a specific executive.
+- External auditor requiring access to a server room.
+- Maintenance worker from the building management company.
+
+Physical pretexting is high-risk and requires extra care:
+
+- Define the exact areas you may enter in the written authorization.
+- Carry a get-out-of-jail letter from an authorized executive.
+- Know exactly what to do and say if confronted.
+- Never access systems you are not authorized to touch.
+
+## Documenting Pretexting Results
+
+For each attempt, record:
+
+```text
+Date/Time: 2026-04-24 14:32
+Channel: Phone
+Pretext: IT help desk / account security alert
+Target: Jane Smith, Help Desk Lead
+Outcome: Target provided username. Declined to provide password. Offered to call back on main IT number.
+
+Finding: Target demonstrated partial resistance (declined password) but still disclosed a username. 
+Recommendation: Training should reinforce that no IT credentials should be shared over the phone, 
+even usernames. A callback verification process would have stopped this attempt entirely.
+```
+
+## Reporting Social Engineering Findings
+
+Social engineering findings are sensitive. Reports must:
+
+- Avoid identifying individuals by name in distributed summaries (use role or department).
+- Frame findings as organizational gaps, not individual failures.
+- Provide specific, actionable recommendations for each finding.
+- Include both successes (employees who resisted and reported) and failures.
+
+## Task
+
+> **[Task]** Write a complete pretext scenario for an authorized exercise against your own organization or lab. Include: the character, reason, supporting details, the hook, and the ask. Script three possible responses from the target and your planned reply to each. Identify what information you would need from OSINT to make this pretext credible. Do not execute it unless you have explicit authorization.
+
+## Reference
+
+- [Social Engineering: The Science of Human Hacking - Chris Hadnagy](https://www.amazon.com/Social-Engineering-Science-Human-Hacking/dp/111943338X)
+- [MITRE ATT&CK - Phishing for Information (T1598)](https://attack.mitre.org/techniques/T1598/)
+- [MITRE ATT&CK - Gather Victim Identity Information (T1589)](https://attack.mitre.org/techniques/T1589/)
+- [The Social Engineering Framework](https://www.social-engineer.org/framework/)

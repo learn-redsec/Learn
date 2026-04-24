@@ -1,0 +1,50 @@
+---
+title: "Intro: Password Cracking"
+description: Hands-on course covering hash identification, dictionary attacks, rule-based cracking, and mask attacks using Hashcat and John the Ripper.
+---
+
+Password cracking is the process of recovering plaintext passwords from their hashed representations. In red team engagements, cracked passwords unlock additional accounts, reveal password patterns, and often allow lateral movement to systems you could not otherwise reach.
+
+## What You Will Learn
+
+- Identify common hash types and their formats.
+- Perform dictionary attacks using wordlists.
+- Apply Hashcat rules to dramatically increase wordlist coverage.
+- Use mask attacks to target passwords with known character patterns.
+- Build optimized cracking strategies for different target types.
+
+## Lab Environment
+
+You only need your local machine. Password cracking benefits enormously from GPU acceleration—if you have an NVIDIA or AMD GPU, use it.
+
+Collect hashes from:
+- Your AD lab (via Mimikatz/secretsdump DCSync output).
+- Intentionally vulnerable systems (DVWA, Metasploitable).
+- Practice databases from [hashes.org](https://hashes.org) or [CrackStation](https://crackstation.net).
+
+## Tools Used in This Course
+
+| Tool | Purpose |
+|------|---------|
+| `hashcat` | GPU-accelerated hash cracking |
+| `john` (John the Ripper) | CPU-based hash cracking, format conversion |
+| `hash-identifier` | Identify unknown hash types |
+| `haiti` | Modern hash type identification |
+
+## Setup
+
+```sh
+# Install tools
+sudo apt install -y hashcat john hash-identifier
+
+# Install haiti (modern hash identifier)
+gem install haiti-hash
+
+# Verify hashcat GPU support
+hashcat -I
+
+# Download rockyou.txt wordlist (if not present)
+gunzip /usr/share/wordlists/rockyou.txt.gz
+```
+
+You are ready. Proceed to Tutorial 01.

@@ -1,27 +1,110 @@
 ---
-title: Labs
-description: Small, contained exercises for authorized practice.
+title: Resources
+description: Curated tools, practice platforms, and reference material for red team learning.
 ---
 
-Labs are where the concepts become muscle memory. Use local environments, course-provided targets, or intentionally vulnerable systems that clearly allow practice.
+A focused collection of resources to support every phase of a red team engagement. Everything listed here is free to access or has a meaningful free tier.
 
-## Lab Checklist
+## Practice Platforms
 
-Before starting:
+Start here when you need a target to test against. All platforms are intentionally vulnerable and explicitly allow practice.
 
-- Confirm the lab is authorized.
-- Reset the environment if needed.
-- Open a notes file.
-- Record the goal of the exercise.
+<CardGroup cols={2}>
+  <Card title="Hack The Box" href="https://www.hackthebox.com" icon="box">
+    Realistic machines, Pro Labs (AD environments), and seasonal events. Free tier available.
+  </Card>
+  <Card title="TryHackMe" href="https://tryhackme.com" icon="flag">
+    Guided learning paths for every skill level. Excellent for beginners and structured practice.
+  </Card>
+  <Card title="VulnHub" href="https://www.vulnhub.com" icon="download">
+    Downloadable vulnerable VMs for fully offline practice. No account required.
+  </Card>
+  <Card title="PortSwigger Web Security Academy" href="https://portswigger.net/web-security" icon="globe">
+    Free, world-class web application security training with browser-based labs.
+  </Card>
+  <Card title="DVWA" href="https://github.com/digininja/DVWA" icon="shield">
+    Damn Vulnerable Web Application. Run locally for SQL injection, XSS, and more.
+  </Card>
+  <Card title="GOAD" href="https://github.com/Orange-Cyberdefense/GOAD" icon="network">
+    Game of Active Directory — automated local AD lab with intentional vulnerabilities.
+  </Card>
+</CardGroup>
 
-During the lab:
+## Essential Tools
 
-- Save commands and important output.
-- Explain each result in your own words.
-- Pause when behavior is unclear and narrow the next test.
+The tools used most often in red team engagements, with links to documentation.
 
-After finishing:
+### Reconnaissance
+| Tool | Purpose | Link |
+|------|---------|------|
+| Nmap | Port scanning and service detection | [nmap.org](https://nmap.org) |
+| theHarvester | Email and subdomain enumeration | [GitHub](https://github.com/laramies/theHarvester) |
+| Shodan | Internet-connected device search | [shodan.io](https://shodan.io) |
+| Recon-ng | Modular web reconnaissance | [GitHub](https://github.com/lanmaster53/recon-ng) |
 
-- Summarize the path to the solution.
-- Record what you would try differently next time.
-- Keep any cleanup or reset steps with the notes.
+### Web Application
+| Tool | Purpose | Link |
+|------|---------|------|
+| Burp Suite | HTTP proxy and web vulnerability scanner | [portswigger.net](https://portswigger.net/burp) |
+| ffuf | Fast web fuzzer | [GitHub](https://github.com/ffuf/ffuf) |
+| sqlmap | SQL injection automation | [sqlmap.org](https://sqlmap.org) |
+| Nikto | Web server scanner | [GitHub](https://github.com/sullo/nikto) |
+
+### Active Directory
+| Tool | Purpose | Link |
+|------|---------|------|
+| BloodHound | AD attack path visualization | [GitHub](https://github.com/BloodHoundAD/BloodHound) |
+| Impacket | Python AD/Windows attack tools | [GitHub](https://github.com/fortra/impacket) |
+| CrackMapExec | SMB/WinRM/LDAP interaction | [GitHub](https://github.com/byt3bl33d3r/CrackMapExec) |
+| Mimikatz | Windows credential extraction | [GitHub](https://github.com/gentilkiwi/mimikatz) |
+
+### Password Cracking
+| Tool | Purpose | Link |
+|------|---------|------|
+| Hashcat | GPU-accelerated hash cracking | [hashcat.net](https://hashcat.net) |
+| John the Ripper | CPU hash cracking | [openwall.com](https://www.openwall.com/john/) |
+| Hydra | Online brute-force | [GitHub](https://github.com/vanhauser-thc/thc-hydra) |
+
+### Post-Exploitation
+| Tool | Purpose | Link |
+|------|---------|------|
+| Metasploit | Exploitation and post-exploitation | [metasploit.com](https://www.metasploit.com) |
+| linpeas / winpeas | Privilege escalation enumeration | [GitHub](https://github.com/carlospolop/PEASS-ng) |
+| Evil-WinRM | Remote PowerShell shell | [GitHub](https://github.com/Hackplayers/evil-winrm) |
+
+## Reference Material
+
+### Methodology
+- [MITRE ATT&CK Framework](https://attack.mitre.org) — the definitive catalog of adversary tactics, techniques, and procedures.
+- [PTES (Penetration Testing Execution Standard)](http://www.pentest-standard.org) — methodology for professional engagements.
+- [OWASP Testing Guide](https://owasp.org/www-project-web-security-testing-guide/) — comprehensive web application security testing reference.
+
+### Cheatsheets
+- [PayloadsAllTheThings](https://github.com/swisskyrepo/PayloadsAllTheThings) — massive collection of payloads and bypass techniques.
+- [GTFOBins](https://gtfobins.github.io) — Unix binaries that can be used for privilege escalation.
+- [LOLBAS](https://lolbas-project.github.io) — Living Off the Land Binaries and Scripts for Windows.
+- [HackTricks](https://book.hacktricks.xyz) — comprehensive red team reference organized by technique.
+- [Reverse Shell Generator](https://www.revshells.com) — generate reverse shell one-liners for any language.
+
+### Learning
+- [PortSwigger Web Security Academy](https://portswigger.net/web-security) — free web app security course with labs.
+- [TCM Security Courses](https://academy.tcm-sec.com) — affordable, practical red team courses.
+- [Sektor7 Malware Development](https://institute.sektor7.net) — advanced Windows offensive development.
+- [0xdf Walkthrough Blog](https://0xdf.gitlab.io) — detailed HTB machine walkthroughs for learning methodology.
+
+## Wordlists
+
+| Wordlist | Use |
+|---------|-----|
+| [rockyou.txt](https://www.google.com/search?q=rockyou.txt+download) | General password cracking |
+| [SecLists](https://github.com/danielmiessler/SecLists) | Everything: passwords, usernames, fuzzing, payloads |
+| [CrackStation](https://crackstation.net/crackstation-wordlist-password-cracking-dictionary.htm) | Large password cracking database |
+
+```sh
+# Install SecLists on Kali/Parrot
+sudo apt install seclists
+
+# Location after install
+ls /usr/share/seclists/
+```
+

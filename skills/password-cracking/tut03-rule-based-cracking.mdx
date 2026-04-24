@@ -1,0 +1,156 @@
+---
+title: "Tut03: Rule-Based Cracking"
+---
+
+Rules transform every word in a wordlist—adding numbers, capitalizing letters, substituting characters—exponentially increasing coverage without storing massive wordlists. A single rule set can turn 14 million words into billions of effective candidates.
+
+## How Rules Work
+
+A hashcat rule is a sequence of single-character functions applied to each input word. Rules are stored in `.rule` files, one rule per line.
+
+Example: the word `password` with a few rules:
+
+| Rule | Result |
+|------|--------|
+| `:` (do nothing) | `password` |
+| `c` (capitalize) | `Password` |
+| `u` (uppercase) | `PASSWORD` |
+| `$1` (append 1) | `password1` |
+| `c $1 $!` | `Password1!` |
+
+## Hashcat Rule Syntax
+
+Key rule functions:
+
+| Function | Description |
+|---------|-------------|
+| `:` | No-op (passthrough) |
+| `l` | Lowercase all |
+| `u` | Uppercase all |
+| `c` | Capitalize first letter |
+| `r` | Reverse word |
+| `d` | Duplicate word |
+| `$X` | Append character X |
+| `^X` | Prepend character X |
+| `[` | Delete first character |
+| `]` | Delete last character |
+| `sXY` | Substitute character X with Y |
+| `T N` | Toggle case at position N |
+
+## Running Rules with Hashcat
+
+```sh
+# Apply a rule file to a wordlist
+hashcat -a 0 -m 1000 nt_hashes.txt rockyou.txt -r /usr/share/hashcat/rules/best64.rule
+
+# Use multiple rule files (stacked, results in combinations)
+hashcat -a 0 -m 1000 nt_hashes.txt rockyou.txt -r rules/best64.rule -r rules/custom.rule
+
+# Run all built-in rules in sequence
+hashcat -a 0 -m 1000 nt_hashes.txt rockyou.txt -r /usr/share/hashcat/rules/rockyou-30000.rule
+```
+
+## Built-in Rule Files
+
+Hashcat ships with several rule files in `/usr/share/hashcat/rules/`:
+
+| File | Description |
+|------|-------------|
+| `best64.rule` | 64 high-value rules, fast |
+| `rockyou-30000.rule` | 30,000 rules derived from rockyou analysis |
+| `d3ad0ne.rule` | Community favorite, wide coverage |
+| `dive.rule` | Very large, thorough |
+| `OneRuleToRuleThemAll.rule` | Popular mega-rule set |
+
+Download `OneRuleToRuleThemAll`:
+
+```sh
+curl -O https://raw.githubusercontent.com/NotSoSecure/password_cracking_rules/master/OneRuleToRuleThemAll.rule
+hashcat -a 0 -m 1000 nt_hashes.txt rockyou.txt -r OneRuleToRuleThemAll.rule
+```
+
+## Writing Custom Rules
+
+Create a file `custom.rule`:
+
+```
+# Append common suffixes
+$1
+$!
+$1$!
+$2$0$2$4$!
+$2$0$2$5$!
+
+# Capitalize + suffix
+c$1
+c$!
+c$1$!
+c$2$0$2$4
+c$2$0$2$4$!
+
+# Leet speak substitutions
+sa4
+se3
+si1
+so0
+```
+
+Apply:
+
+```sh
+hashcat -a 0 -m 1000 nt_hashes.txt rockyou.txt -r custom.rule
+```
+
+## Testing Rules
+
+Before running against real hashes, test a rule on a known word:
+
+```sh
+# Run the rule and show candidates (no hash target)
+hashcat -r custom.rule --stdout rockyou.txt | head -50
+```
+
+This prints what the wordlist + rule combination would produce without doing any cracking.
+
+## Rule Generation with PACK
+
+PACK (Password Analysis and Cracking Kit) analyzes previously cracked passwords and generates rules that match the patterns.
+
+```sh
+# Install PACK
+pip3 install pack
+
+# Analyze a set of known passwords
+python3 statsgen.py cracked_passwords.txt
+
+# Generate rules from patterns
+python3 rulegen.py cracked_passwords.txt -o generated.rule
+```
+
+If you have cracked even a fraction of your hash list, use PACK to generate rules that match those patterns and crack more.
+
+## Hashcat Rule Attack vs. Combinator
+
+The **combinator** attack (`-a 1`) pairs words from two wordlists. Rules can achieve the same result more efficiently:
+
+```sh
+# Combinator: word1 + word2 (every combination)
+hashcat -a 1 -m 1000 nt_hashes.txt wordlist1.txt wordlist2.txt
+
+# Rule that appends a second word is often more targeted
+```
+
+## Task
+
+> **[Task]** Create a small wordlist of 10 corporate-style passwords you invent (e.g., company names with year and special character). Hash them all as NTLM. Now try to crack them:
+> 1. First with rockyou.txt and no rules. Record how many crack.
+> 2. Then add `best64.rule`. Record the new count.
+> 3. Then write a custom rule with at least 5 lines targeting patterns you see in your passwords.
+>
+> Document how adding rules increased the crack rate.
+
+## Reference
+
+- [Hashcat Rule-Based Attack Documentation](https://hashcat.net/wiki/doku.php?id=rule_based_attack)
+- [OneRuleToRuleThemAll](https://github.com/NotSoSecure/password_cracking_rules)
+- [Hashcat Built-in Rules](https://github.com/hashcat/hashcat/tree/master/rules)

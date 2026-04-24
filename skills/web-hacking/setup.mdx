@@ -1,0 +1,58 @@
+---
+title: "Intro: Web Application Hacking"
+description: Hands-on course covering web reconnaissance, SQL injection, XSS, authentication bypass, and server-side vulnerabilities in authorized lab environments.
+---
+
+Web applications are one of the most common attack surfaces in modern infrastructure. Nearly every organization exposes at least one web app to the internet, and a single exploitable vulnerability can lead to full database compromise, account takeover, or server-level access.
+
+This course teaches you how professional red teamers approach web application testing—from mapping the application to exploiting critical vulnerabilities.
+
+## What You Will Learn
+
+- Map the structure and technology of a web application.
+- Discover and exploit SQL injection to extract data and escalate access.
+- Identify and exploit Cross-Site Scripting (XSS) vulnerabilities.
+- Bypass authentication mechanisms using common weaknesses.
+- Exploit Server-Side Request Forgery (SSRF) and XML External Entity (XXE) injection.
+
+## Lab Environment
+
+Use purpose-built intentionally vulnerable applications:
+
+| App | What it teaches |
+|-----|----------------|
+| [DVWA](https://github.com/digininja/DVWA) | General web vulnerabilities |
+| [WebGoat](https://github.com/WebGoat/WebGoat) | Guided vulnerability lessons |
+| [Juice Shop](https://github.com/juice-shop/juice-shop) | OWASP Top 10 challenges |
+| [HackTheBox Web Challenges](https://www.hackthebox.com) | CTF-style web exploitation |
+
+Never test web apps you do not own or have explicit authorization to test.
+
+## Tools Used in This Course
+
+| Tool | Purpose |
+|------|---------|
+| `Burp Suite Community` | HTTP proxy, scanner, repeater |
+| `curl` | Manual HTTP requests |
+| `gobuster` / `ffuf` | Directory and parameter brute-force |
+| `sqlmap` | SQL injection automation |
+| `nikto` | Web server vulnerability scanning |
+| `whatweb` | Technology fingerprinting |
+
+## Setup
+
+```sh
+# Install core tools
+sudo apt update && sudo apt install -y burpsuite gobuster ffuf sqlmap nikto whatweb curl
+
+# Start DVWA with Docker
+docker run -d -p 80:80 vulnerables/web-dvwa
+
+# Access in your browser
+# http://localhost/
+# Default creds: admin / password
+```
+
+Configure Burp Suite as your browser proxy (127.0.0.1:8080) so every request flows through it.
+
+You are ready. Proceed to Tutorial 01.

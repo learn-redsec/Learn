@@ -1,0 +1,146 @@
+---
+title: "Tut04: Mask Attacks"
+---
+
+When you know something about the structure of a password—its length, whether it starts with an uppercase letter, ends in digits—mask attacks let you generate only those candidates. This is faster and more targeted than an exhaustive brute force.
+
+## What Is a Mask Attack?
+
+A mask defines the structure of the password using placeholder characters:
+
+| Placeholder | Charset |
+|-------------|---------|
+| `?l` | Lowercase letters (a-z) |
+| `?u` | Uppercase letters (A-Z) |
+| `?d` | Digits (0-9) |
+| `?s` | Special characters (`!@#$%^&*...`) |
+| `?a` | All printable characters (`?l?u?d?s`) |
+| `?h` | Hex lowercase (0-9a-f) |
+| `?H` | Hex uppercase (0-9A-F) |
+
+You can also define custom character sets with `-1` through `-4`.
+
+## Hashcat Mask Attack Syntax
+
+```sh
+hashcat -a 3 -m <mode> <hashfile> <mask>
+```
+
+`-a 3` — attack mode: brute-force with mask
+
+## Common Password Patterns
+
+### Uppercase + 5 lowercase + 2 digits
+
+Matches patterns like `Monkey42`, `Dragon99`:
+
+```sh
+hashcat -a 3 -m 1000 nt_hashes.txt ?u?l?l?l?l?l?d?d
+```
+
+### Word + year (4 digits)
+
+Matches `password2024`, `summer2024`:
+
+```sh
+# If the word part comes from a wordlist, use hybrid mode (-a 6 or -a 7)
+# Mask-only: 6 lowercase letters + 4 digits
+hashcat -a 3 -m 1000 nt_hashes.txt ?l?l?l?l?l?l?d?d?d?d
+```
+
+### Corporate pattern: Capital + lowercase x5 + digit + special
+
+Matches `Winter1!`, `Spring2@`:
+
+```sh
+hashcat -a 3 -m 1000 nt_hashes.txt ?u?l?l?l?l?l?d?s
+```
+
+### PIN / All digits
+
+```sh
+# 6-digit PIN
+hashcat -a 3 -m 0 pin.hash ?d?d?d?d?d?d
+```
+
+## Custom Character Sets
+
+Define your own charset with `-1` through `-4`:
+
+```sh
+# -1 defines a custom charset: only digits and !@#
+hashcat -a 3 -m 1000 nt_hashes.txt -1 '?d!@#' ?u?l?l?l?l?l?1?1
+
+# Matches: Capital + 5 lowercase + 2 chars from {0-9,!,@,#}
+```
+
+## Hybrid Attack: Wordlist + Mask
+
+Hybrid attacks combine a wordlist with a mask. Mode `-a 6` appends the mask to each word; `-a 7` prepends it.
+
+```sh
+# Append 2 digits to every word in rockyou.txt
+hashcat -a 6 -m 1000 nt_hashes.txt rockyou.txt ?d?d
+
+# Prepend 2 digits to every word
+hashcat -a 7 -m 1000 nt_hashes.txt ?d?d rockyou.txt
+
+# Append year (common pattern: word + 4 digits)
+hashcat -a 6 -m 1000 nt_hashes.txt rockyou.txt ?d?d?d?d
+```
+
+## Mask Files
+
+Instead of specifying masks one at a time, a mask file contains multiple masks, one per line:
+
+```text
+# corporate.hcmask
+?u?l?l?l?l?d?d!
+?u?l?l?l?l?d?d?s
+?u?l?l?l?l?l?d?d?d?d
+?u?l?l?l?l?l?l?d?d?d?d
+?u?l?l?l?l?l?d?s
+```
+
+Run all masks in one command:
+
+```sh
+hashcat -a 3 -m 1000 nt_hashes.txt corporate.hcmask
+```
+
+Hashcat iterates through each mask in sequence.
+
+## Estimating Keyspace
+
+Before running a mask attack, estimate how many candidates it will generate:
+
+```sh
+# Show keyspace size without running
+hashcat -a 3 -m 1000 nt_hashes.txt ?u?l?l?l?l?l?d?d --keyspace
+# 8031810176
+```
+
+Divide by your hashes/second to estimate the time required.
+
+## Practical Cracking Strategy
+
+A good sequential strategy for a set of NT hashes:
+
+1. **Dictionary**: rockyou.txt (no rules) — fastest, catches simplest passwords.
+2. **Dictionary + Rules**: rockyou.txt + best64.rule — catches common transformations.
+3. **Dictionary + Rules**: rockyou.txt + OneRuleToRuleThemAll — thorough.
+4. **Hybrid**: rockyou.txt + `?d?d?d?d` — catches word+year patterns.
+5. **Mask**: common 8-char patterns for the target org.
+6. **Targeted dictionary**: CeWL wordlist from the org's website + rules.
+
+Move to the next step only when the previous produces no more results.
+
+## Task
+
+> **[Task]** Create NT hashes for these passwords: `Summer2024!`, `Monkey99`, `P@ssw0rd`, `Admin1234`, `Welcome1`. Run a mask attack with an appropriate mask for each one without using a wordlist. Record which masks you used and how long each crack took. Then design a mask file for a fictional corporate environment (invent the password policy) and document your reasoning.
+
+## Reference
+
+- [Hashcat Mask Attack Documentation](https://hashcat.net/wiki/doku.php?id=mask_attack)
+- [Hashcat Hybrid Attack](https://hashcat.net/wiki/doku.php?id=hybrid_attack)
+- [Hashcat Example Hashes](https://hashcat.net/wiki/doku.php?id=example_hashes)

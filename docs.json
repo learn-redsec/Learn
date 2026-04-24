@@ -48,11 +48,11 @@
       },
       {
         "label": "Binary Exploitation",
-        "href": "/skills/binary%20exploitation/setup"
+        "href": "/skills/binary-exploitation/setup"
       },
       {
         "label": "Advanced Malware Analysis",
-        "href": "/skills/advanced%20malware%20analysis/setup"
+        "href": "/skills/advanced-malware-analysis/setup"
       },
       {
         "label": "Labs",
@@ -136,29 +136,29 @@
           {
             "group": "Binary Exploitation",
             "pages": [
-              "skills/binary exploitation/setup",
-              "skills/binary exploitation/tut01-warmup1",
-              "skills/binary exploitation/tut02-warmup2",
-              "skills/binary exploitation/tut03-01-exploit",
-              "skills/binary exploitation/tut03-02-pwntools",
-              "skills/binary exploitation/tut04-ssp",
-              "skills/binary exploitation/tut05-fmtstr",
-              "skills/binary exploitation/tut06-01-rop",
-              "skills/binary exploitation/tut06-02-advrop",
-              "skills/binary exploitation/tut07-01-socket",
-              "skills/binary exploitation/tut07-02-remote",
-              "skills/binary exploitation/tut08-logic-error",
-              "skills/binary exploitation/tut09-01-heap",
-              "skills/binary exploitation/tut09-02-advheap",
-              "skills/binary exploitation/tut10-01-fuzzing",
-              "skills/binary exploitation/tut10-02-symexec",
-              "skills/binary exploitation/tut10-03-hybrid-fuzzing"
+              "skills/binary-exploitation/setup",
+              "skills/binary-exploitation/tut01-warmup1",
+              "skills/binary-exploitation/tut02-warmup2",
+              "skills/binary-exploitation/tut03-01-exploit",
+              "skills/binary-exploitation/tut03-02-pwntools",
+              "skills/binary-exploitation/tut04-ssp",
+              "skills/binary-exploitation/tut05-fmtstr",
+              "skills/binary-exploitation/tut06-01-rop",
+              "skills/binary-exploitation/tut06-02-advrop",
+              "skills/binary-exploitation/tut07-01-socket",
+              "skills/binary-exploitation/tut07-02-remote",
+              "skills/binary-exploitation/tut08-logic-error",
+              "skills/binary-exploitation/tut09-01-heap",
+              "skills/binary-exploitation/tut09-02-advheap",
+              "skills/binary-exploitation/tut10-01-fuzzing",
+              "skills/binary-exploitation/tut10-02-symexec",
+              "skills/binary-exploitation/tut10-03-hybrid-fuzzing"
             ]
           },
           {
             "group": "Advanced Malware Analysis",
             "pages": [
-              "skills/advanced malware analysis/setup"
+              "skills/advanced-malware-analysis/setup"
             ]
           },
           {
